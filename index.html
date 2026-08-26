@@ -1100,7 +1100,10 @@ const ASSETS = {
   skyPortrait:  "assets/stadium_night_portrait.webp", // вертикальный кадр (для телефона)
   loading:      "",   // свой фон экрана загрузки (пока пусто — виден общий стадион)
   splash:       "",   // свой фон стартового экрана
-  music:        "assets/music_menu.mp3",   // музыка загрузки, заставки и меню
+  music:        "assets/music_menu.mp3",     // музыка загрузки, заставки и меню
+  musicMatch1:  "assets/music_match1.mp3",   // матч, шаги 1–5 («раунд»)
+  musicMatch2:  "assets/music_match2.mp3",   // матч, шаги 6–10 («куш»)
+  musicMatch3:  "",                          // шаги 11–15; пусто — продолжается второй акт
   turf:         "",   // текстура газона под лестницу зон
   ball:         "assets/ball.webp",   // мяч: на лестнице зон и на пенальти
   goal:         "",   // ворота с сеткой для пенальти
@@ -1325,39 +1328,68 @@ function audio(){
   return actx;
 }
 /* ---------------------------------------------------------------------------
-   МУЗЫКА МЕНЮ. Играет на экранах загрузки, заставки и меню; в матче молчит.
-   Автозапуск до первого жеста браузеры блокируют — тогда стартуем на первом
-   касании (стартовый экран и так требует тап). Глушится вместе со всем звуком
-   (кнопка 🔊, сворачивание, реклама — требование Яндекса).
+   МУЗЫКА — джукбокс из трёх актов.
+   menu — загрузка, заставка, меню; m1 — матч, шаги 1–5; m2 — шаги 6–10;
+   m3 — шаги 11–15 (слот пуст — продолжается m2). Переключение — кроссфейдом.
+   Автозапуск до первого жеста браузеры блокируют — стартуем с первого касания.
+   Глушение единое: кнопка звука, сворачивание, реклама (требование Яндекса).
 --------------------------------------------------------------------------- */
-let music = null, musicWanted = false, musicFade = null;
+let jbTracks = {}, jbCurrent = null, jbFades = {};
+const JB_VOL = { menu:.45, m1:.32, m2:.34, m3:.34 };
+function jbSrc(k){
+  return k==="menu" ? ASSETS.music : k==="m1" ? ASSETS.musicMatch1 :
+         k==="m2" ? ASSETS.musicMatch2 : ASSETS.musicMatch3;
+}
 function musicInit(){
-  if(music || !ASSETS.music) return;
-  music = new Audio(ASSETS.music);
-  music.loop = true; music.volume = .45; music.preload = "auto";
-  const kick = ()=>{ if(musicWanted && soundOn && !paused && music.paused) music.play().catch(()=>{}); };
+  if(Object.keys(jbTracks).length) return;
+  ["menu","m1","m2","m3"].forEach(k=>{
+    const src = jbSrc(k); if(!src) return;
+    const a = new Audio(src); a.loop = true; a.preload = "auto"; a.volume = 0;
+    jbTracks[k] = a;
+  });
+  const kick = ()=>{ const t = jbTracks[jbCurrent];
+    if(t && soundOn && !paused && t.paused){ t.play().catch(()=>{}); } };
   document.addEventListener("pointerdown", kick);
   document.addEventListener("keydown", kick);
 }
-function musicPlay(){
-  musicWanted = true;
-  if(!music || !soundOn || paused) return;
-  clearInterval(musicFade); music.volume = .45;
-  music.play().catch(()=>{});                       // заблокировано — стартуем с первого жеста
-}
-function musicStop(){
-  musicWanted = false;
-  if(!music || music.paused) return;
-  clearInterval(musicFade);                          // плавное затухание за ~0.8 с
-  musicFade = setInterval(()=>{
-    music.volume = Math.max(0, music.volume - .05);
-    if(music.volume <= 0){ clearInterval(musicFade); music.pause(); music.volume = .45; }
+/* Плавно ведёт громкость трека к цели; на нуле ставит на паузу. */
+function jbFade(key, target){
+  const a = jbTracks[key]; if(!a) return;
+  clearInterval(jbFades[key]);
+  if(target > 0 && a.paused && soundOn && !paused) a.play().catch(()=>{});
+  jbFades[key] = setInterval(()=>{
+    const d = target - a.volume;
+    if(Math.abs(d) <= .045){
+      a.volume = target; clearInterval(jbFades[key]);
+      if(target === 0) a.pause();
+      return;
+    }
+    a.volume = Math.max(0, Math.min(1, a.volume + Math.sign(d)*.045));
   }, 80);
 }
-function musicSync(){                                /* пауза/возврат без смены желания играть */
-  if(!music) return;
-  if(!soundOn || paused){ if(!music.paused) music.pause(); }
-  else if(musicWanted && music.paused){ music.play().catch(()=>{}); }
+/* Какой акт положен на этом шаге матча (с откатом на доступные треки). */
+function matchTierKey(step){
+  const want = step<=5 ? "m1" : step<=10 ? "m2" : "m3";
+  if(jbTracks[want]) return want;
+  if(want==="m3" && jbTracks.m2) return "m2";
+  return jbTracks.m1 ? "m1" : null;
+}
+function musicPlay(key){
+  key = key || "menu";
+  if(!jbTracks[key]){ return; }
+  if(jbCurrent === key){ jbFade(key, JB_VOL[key]); return; }   // возобновление после паузы
+  if(jbCurrent) jbFade(jbCurrent, 0);
+  jbCurrent = key;
+  jbFade(key, JB_VOL[key]);
+}
+function musicStop(){
+  if(jbCurrent){ jbFade(jbCurrent, 0); jbCurrent = null; }
+}
+function musicSync(){
+  const t = jbCurrent && jbTracks[jbCurrent];
+  if(!t) return;
+  if(!soundOn || paused){ if(!t.paused) t.pause(); }
+  else if(t.paused){ t.play().catch(()=>{}); }
 }
 function muteAll(on){
   try{ if(actx){ on ? actx.suspend() : (soundOn && actx.resume().catch(()=>{})); } }catch(e){}
@@ -1597,8 +1629,8 @@ function renderAll(kick){ renderBoard(); renderZones(kick); renderTools(); rende
    6) ХОД МАТЧА
 --------------------------------------------------------------------------- */
 function startMatch(posKey){
-  musicStop();
   S = newMatch(posKey);
+  musicPlay(matchTierKey(1));
   buildZones();
   $("scrMenu").hidden = true; $("scrGame").hidden = false;
   SFX.whistle();
@@ -1611,7 +1643,7 @@ function startMatch(posKey){
 function resumeMatch(raw){
   try{ S = JSON.parse(raw); }catch(e){ return false; }
   if(!S || S.v!==VERSION || S.phase==="over") return false;
-  musicStop();
+  musicPlay(matchTierKey(S.step));
   buildZones();
   $("scrMenu").hidden = true; $("scrGame").hidden = false;
   renderAll();
@@ -1693,6 +1725,7 @@ function offerFlanks(){
     row.appendChild(b);
   });
   say("flank");
+  musicPlay(matchTierKey(S.step));      // смена акта на границах 5/10 — кроссфейдом
   renderAll();
   saveMatch();
   maybeTutFlank();
@@ -2209,6 +2242,7 @@ function penResult(scored, text){
 --------------------------------------------------------------------------- */
 function finish(reason){
   S.phase = "over";
+  musicStop();
   clearMatch();
   clearInterval(lockTimer); clearInterval(penTimer);
   /* На красной карточке остаётся гарантия и уже заработанная премия, но надбавка амплуа

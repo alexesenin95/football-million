@@ -51,6 +51,11 @@ def build(bare=False):
     MIME = {".webp": "image/webp", ".png": "image/png", ".jpg": "image/jpeg",
             ".jpeg": "image/jpeg", ".svg": "image/svg+xml", ".gif": "image/gif",
             ".mp3": "audio/mpeg", ".ogg": "audio/ogg"}
+    # Аудио тяжёлое, а у одиночного файла есть потолок размера: вшиваем треки
+    # в порядке объявления, пока укладываемся в бюджет; остальные отключаем.
+    AUDIO_BUDGET = 6_000_000
+    audio_used = [0]
+    dropped_audio = []
     def inline_asset(m):
         rel = m.group(1)
         path = os.path.join(HERE, rel)
@@ -61,9 +66,17 @@ def build(bare=False):
             raise SystemExit("в ASSETS указан несуществующий файл: %s" % rel)
         if ext not in MIME:
             raise SystemExit("неизвестный тип файла в ASSETS: %s" % rel)
+        size = os.path.getsize(path)
+        if ext in (".mp3", ".ogg"):
+            if audio_used[0] + size > AUDIO_BUDGET:
+                dropped_audio.append(rel)
+                return '""'
+            audio_used[0] += size
         data = base64.b64encode(open(path, "rb").read()).decode()
         return '"data:%s;base64,%s"' % (MIME[ext], data)
     src = re.sub(r'"(assets/[^"]+)"', inline_asset, src)
+    if dropped_audio:
+        print("аудио не вшито (бюджет одиночного файла): " + ", ".join(dropped_audio))
 
     if bare:
         # Снимаем обвязку документа: <title> должен остаться первой строкой.

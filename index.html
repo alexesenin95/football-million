@@ -707,6 +707,37 @@ html.has-host #commentary .mic{display:none}
 .rules li{margin:.25em 0}
 .rules b{color:var(--ink)}
 
+/* ---------------------------------------------------------------------------
+   ОБУЧЕНИЕ «УСТАНОВКА ТРЕНЕРА»: вуаль с вырезом-прожектором вокруг живого
+   элемента интерфейса + золотая карточка с коротким правилом. Показывается
+   один раз, на первом матче; повторить можно из меню матча (☰).
+--------------------------------------------------------------------------- */
+#tut{position:absolute;inset:0;z-index:60}
+#tut[hidden]{display:none}
+#tutHole{position:absolute;border-radius:16px;pointer-events:none;
+  box-shadow:0 0 0 9999px rgba(2,6,10,.84), 0 0 34px rgba(255,207,61,.35);
+  border:2px dashed var(--edgeGoldLit);
+  transition:top .35s ease,left .35s ease,width .35s ease,height .35s ease;
+  animation:tutPulse 1.6s ease-in-out infinite}
+@keyframes tutPulse{50%{border-color:rgba(255,207,61,.4)}}
+#tutCard{position:absolute;--c:14px;width:min(430px,88vw);
+  padding:clamp(14px,1.8vw,22px) clamp(16px,2vw,26px);
+  transition:top .35s ease,left .35s ease}
+.tutEyebrow{display:flex;align-items:center;gap:.8em;
+  font-family:var(--led);font-size:.62em;letter-spacing:.2em;color:var(--gold);
+  font-weight:700;margin-bottom:.7em}
+.tutEyebrow::after{content:"";height:1px;flex:1;
+  background:linear-gradient(90deg,var(--edgeGoldLit),transparent)}
+.tutEyebrow b{color:#8fa0ab;font-weight:700}
+.tutTtl{font-family:var(--led);font-weight:900;font-size:clamp(15px,1.5vw,21px);
+  color:#fff;letter-spacing:.05em;margin-bottom:.45em;text-shadow:0 2px 0 rgba(0,0,0,.5)}
+.tutTxt{color:#c3ced4;font-weight:700;font-size:clamp(12px,1vw,15px);line-height:1.55}
+.tutTxt b{color:var(--gold)}
+.tutRow{display:flex;gap:10px;margin-top:1em;align-items:center}
+.tutSkip{margin-left:auto;font-family:var(--led);font-size:.66em;letter-spacing:.14em;
+  color:#8fa0ab;font-weight:700;padding:.6em .4em}
+.tutSkip:hover{color:var(--gold)}
+
 /* Салют/конфетти при голе */
 #confetti{position:absolute;inset:0;pointer-events:none;z-index:50;overflow:hidden}
 .conf{position:absolute;width:9px;height:14px;border-radius:2px;animation:fall linear forwards}
@@ -1013,6 +1044,19 @@ html.has-host #commentary .mic{display:none}
   </div>
 </div>
 
+<!-- Обучение -->
+<div id="tut" hidden>
+  <div id="tutHole"></div>
+  <div id="tutCard" class="cut lit">
+    <div class="tutEyebrow">УСТАНОВКА ТРЕНЕРА <b id="tutStep">1/4</b></div>
+    <div class="tutTtl" id="tutTtl"></div>
+    <div class="tutTxt" id="tutTxt"></div>
+    <div class="tutRow">
+      <button class="btn prime" id="tutNext">ПОНЯТНО</button>
+      <button class="tutSkip" id="tutSkip">ПРОПУСТИТЬ</button>
+    </div>
+  </div>
+</div>
 <div id="confetti"></div>
 </div>
 
@@ -1607,6 +1651,7 @@ function offerFlanks(){
   say("flank");
   renderAll();
   saveMatch();
+  maybeTutFlank();
 }
 function chooseFlank(f, idx){
   if(S.phase!=="flank" || !f) return;
@@ -1660,6 +1705,7 @@ function askQuestion(extraTime){
   say("ask");
   renderAll();
   saveMatch();
+  maybeTutAsk();
 }
 
 /* --- Часы --- */
@@ -1670,6 +1716,7 @@ function tickLoop(ts){
   lastTick = ts;
   if(!S || S.phase!=="ask" || paused || adShowing) return;
   if(!$("ovFlash").hidden || !$("ovPen").hidden || !$("ovResult").hidden || !$("ovRules").hidden) return;
+  if(tutOpen()) return;
   const before = Math.ceil(S.time);
   S.time -= dt;
   const after = Math.ceil(S.time);
@@ -2167,6 +2214,84 @@ function finish(reason){
   setTimeout(showFullscreenAd, 900);
 }
 
+/* ---------------------------------------------------------------------------
+   ОБУЧЕНИЕ. Четыре шага на живом интерфейсе первого матча:
+   два на выборе фланга (фланги, поле) и два на первом вопросе (замены, часы).
+   Пока обучение открыто, часы вопроса стоят (см. tickLoop).
+--------------------------------------------------------------------------- */
+const TUT_KEY = "f15_tut_v1";
+const TUT_FLANK = [
+  { el:"#flankRow", ttl:"ВЫБЕРИ ФЛАНГ АТАКИ",
+    txt:`Фланг — это <b>тема вопроса</b>. Золотая карточка «ваша позиция» — вопросы про игроков твоего амплуа: там ты сильнее всего.` },
+  { el:"#pitch", ttl:"15 ЗОН ДО ВОРОТ",
+    txt:`Верный ответ двигает мяч на зону вперёд. <b>Золотые зоны — несгораемые.</b> Ошибка — жёлтая карточка и откат к гарантии, вторая — красная… но останется пенальти.` },
+];
+const TUT_ASK = [
+  { el:"#tools", ttl:"ЗАМЕНЫ И VAR",
+    txt:`Подсказки — это замены. Хитрость: <b>сколько ни возьми подсказок на одном вопросе — спишется одна замена.</b> VAR отдельно: после нажатия на ответ он проверит выбор до свистка.` },
+  { el:"#clock", ttl:"ВРЕМЯ РАБОТАЕТ НА ТЕБЯ",
+    txt:`Сэкономленные на лёгких вопросах секунды капают в <b>банк времени</b> — кнопка «+15″» вернёт их на трудном. Три верных подряд — премия в банк.` },
+];
+let tutSteps = [], tutIdx = 0, tutAfter = null;
+function tutOpen(){ return !$("tut").hidden; }
+function tutSeen(){ return Storage.get(TUT_KEY) === "1"; }
+function tutStart(steps, after){
+  tutSteps = steps.filter(st => document.querySelector(st.el));
+  if(!tutSteps.length) return;
+  tutIdx = 0; tutAfter = after || null;
+  $("tut").hidden = false;
+  SFX.whistle();
+  tutShow();
+}
+function tutShow(){
+  const st = tutSteps[tutIdx];
+  const el = document.querySelector(st.el);
+  const r = el.getBoundingClientRect(), pad = 8;
+  const hole = $("tutHole");
+  hole.style.left = (r.left - pad) + "px";
+  hole.style.top = (r.top - pad) + "px";
+  hole.style.width = (r.width + pad*2) + "px";
+  hole.style.height = (r.height + pad*2) + "px";
+  $("tutStep").textContent = (tutIdx+1) + "/" + tutSteps.length;
+  $("tutTtl").textContent = st.ttl;
+  $("tutTxt").innerHTML = st.txt;
+  $("tutNext").textContent = tutIdx === tutSteps.length-1 ? "В ИГРУ" : "ПОНЯТНО";
+  /* Карточка — под вырезом, если влезает, иначе над; по горизонтали прижата к нему. */
+  const card = $("tutCard");
+  card.style.visibility = "hidden"; card.style.left = "0"; card.style.top = "0";
+  requestAnimationFrame(()=>{
+    const cw = card.offsetWidth, ch = card.offsetHeight, gap = 16;
+    let left = Math.max(12, Math.min(r.left, innerWidth - cw - 12));
+    let top = r.bottom + pad + gap;
+    if(top + ch > innerHeight - 12) top = r.top - pad - gap - ch;
+    if(top < 12){ top = Math.max(12, (innerHeight - ch)/2); left = r.right + pad + gap;
+      if(left + cw > innerWidth - 12) left = Math.max(12, r.left - pad - gap - cw); }
+    card.style.left = left + "px";
+    card.style.top = top + "px";
+    card.style.visibility = "";
+  });
+}
+function tutClose(done){
+  $("tut").hidden = true;
+  if(done) Storage.set(TUT_KEY, "1");
+  if(tutAfter){ const f = tutAfter; tutAfter = null; f(); }
+}
+function tutNext(){
+  SFX.click();
+  if(++tutIdx >= tutSteps.length){ tutClose(tutSteps === TUT_ASK || tutAfter !== null); return; }
+  tutShow();
+}
+function maybeTutFlank(){
+  if(tutSeen() || S.tutF) return;
+  S.tutF = 1; saveMatch();
+  setTimeout(()=>{ if(S && S.phase === "flank") tutStart(TUT_FLANK); }, 350);
+}
+function maybeTutAsk(){
+  if(tutSeen() || S.tutA) return;
+  S.tutA = 1; saveMatch();
+  setTimeout(()=>{ if(S && S.phase === "ask") tutStart(TUT_ASK, ()=>Storage.set(TUT_KEY,"1")); }, 350);
+}
+
 /* Конфетти в цветах газона и золота. */
 function confetti(n){
   const box = $("confetti");
@@ -2227,6 +2352,13 @@ function openGameMenu(){
     buttons:[
       {t:"ПРОДОЛЖИТЬ МАТЧ", cls:"prime", fn:()=>hideFlash()},
       {t:"ПРАВИЛА", cls:"", fn:()=>{ hideFlash(); $("rulesBody").innerHTML = RULES_HTML; $("ovRules").hidden = false; }},
+      {t:"ОБУЧЕНИЕ", cls:"", fn:()=>{
+        hideFlash();
+        Storage.del(TUT_KEY); S.tutF = 0; S.tutA = 0;
+        if(S.phase === "flank") maybeTutFlank();
+        else if(S.phase === "ask") maybeTutAsk();
+        /* в остальных фазах покажется само на ближайшем выборе фланга */
+      }},
       {t: soundOn ? "🔇 ЗВУК ВЫКЛ" : "🔊 ЗВУК ВКЛ", cls:"", fn:()=>{ toggleSound(); hideFlash(); openGameMenu(); }},
       {t:"ВЫЙТИ В МЕНЮ", cls:"", fn:()=>{ hideFlash(); toMenu(); }},
     ]
@@ -2349,6 +2481,8 @@ function bindUI(){
   $("btnAgain").onclick  = ()=>{ $("ovResult").hidden = true; startMatch(S ? S.pos : menuPos); };
   $("btnMenu").onclick   = ()=>{ $("ovResult").hidden = true; $("scrGame").hidden = true; $("scrMenu").hidden = false; renderMenu(); };
   $("btnGameMenu").onclick = openGameMenu;
+  $("tutNext").onclick = tutNext;
+  $("tutSkip").onclick = ()=>{ SFX.click(); tutClose(true); };
   $("btnStart").onclick = ()=>{
     SFX.whistle();                              // первый тап разблокирует WebAudio
     $("scrMenu").hidden = false;                // меню появляется под уходящим экраном

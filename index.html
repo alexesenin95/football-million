@@ -47,7 +47,8 @@
   --yellow:#ffd60a; --red:#ff3b30;
   --ink:#eaf2ea; --ink2:#8fa3a8; --ink3:#586a70;
   /* Слоты под графику: пока пусто — работают CSS-заглушки, см. ASSETS в скрипте. */
-  --img-sky:none; --img-skyP:none; --img-turf:none; --img-ball:none; --img-goal:none;
+  --img-sky:none; --img-skyP:none; --img-load:none; --img-splash:none;
+  --img-turf:none; --img-ball:none; --img-goal:none;
   --img-keeper:none; --img-cardY:none; --img-cardR:none; --img-host:none;
   --led:'Unbounded',system-ui,sans-serif;
   --body:'Nunito',system-ui,-apple-system,sans-serif;
@@ -170,6 +171,41 @@ html.has-keeper .sector:hover:not(:disabled){background:rgba(200,255,46,.2);bord
   box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
 .btn .bi{font-size:1.15em;line-height:1}
 .hint{color:#a9b8bf;font-size:.9em;font-weight:700;line-height:1.6}
+
+/* ===========================================================================
+   ЭКРАН ЗАГРУЗКИ И СТАРТОВЫЙ ЭКРАН
+   Загрузка: реальный прогресс предзагрузки графики + инициализация SDK.
+   Старт: один большой «первый тап» — он же разблокирует WebAudio на мобильных.
+   Свои фоны подключаются через ASSETS.loading / ASSETS.splash; пока их нет,
+   под экранами виден общий фон стадиона.
+=========================================================================== */
+#scrLoad,#scrSplash{position:fixed;inset:0;z-index:80;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:2.4vh;padding:4vh 6vw;text-align:center;
+  transition:opacity .45s}
+#scrLoad.done,#scrSplash.done{opacity:0;pointer-events:none}
+#scrSplash{z-index:70}
+html.has-load #scrLoad{background:var(--img-load) center/cover no-repeat}
+html.has-splash #scrSplash{background:var(--img-splash) center/cover no-repeat}
+/* затемнение к низу, чтобы полоса и кнопка всегда читались */
+#scrLoad::before,#scrSplash::before{content:"";position:absolute;inset:0;z-index:-1;
+  background:radial-gradient(90% 70% at 50% 110%, rgba(2,5,9,.78), transparent 65%)}
+
+.loadBar{--c:10px;width:min(560px,86vw);height:26px;padding:4px}
+.loadBar .fill{height:100%;width:0%;
+  clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);
+  background:linear-gradient(90deg,var(--gold2),var(--goldPale) 50%,var(--gold2));
+  background-size:200% 100%;animation:barShine 1.6s linear infinite;
+  box-shadow:0 0 18px rgba(255,207,61,.55);transition:width .3s ease-out}
+@keyframes barShine{to{background-position:-200% 0}}
+.loadPct{font-family:var(--led);font-weight:900;font-size:clamp(15px,1.8vw,24px);color:var(--gold);
+  text-shadow:0 0 18px rgba(255,207,61,.5)}
+.loadTip{color:#a9b8bf;font-weight:700;font-size:clamp(12px,1.1vw,16px);min-height:1.5em}
+
+#btnStart{font-size:clamp(16px,1.9vw,26px);padding:.95em 2.2em;
+  animation:startPulse 1.8s ease-in-out infinite}
+@keyframes startPulse{50%{transform:scale(1.045);
+  filter:drop-shadow(0 0 40px rgba(255,190,40,.55))}}
+.splashHint{color:#a9b8bf;font-weight:700;font-size:clamp(11px,1vw,15px);letter-spacing:.08em}
 
 /* ===========================================================================
    ЭКРАН МЕНЮ
@@ -763,8 +799,35 @@ html.has-host #commentary .mic{display:none}
 <div id="sky"></div>
 <div id="app">
 
+<!-- ======================= ЭКРАН ЗАГРУЗКИ ======================= -->
+<section id="scrLoad">
+  <div class="logo">
+    <div class="logoText">
+      <div class="l1">КВИЗ-МАТЧ</div>
+      <div class="l2">15 ШАГОВ К&nbsp;МИЛЛИОНУ</div>
+      <div class="l3"><span>Ф<b>У</b>ТБОЛ</span></div>
+    </div>
+  </div>
+  <div class="loadBar cut"><div class="fill" id="loadFill"></div></div>
+  <div class="loadPct" id="loadPct">0%</div>
+  <div class="loadTip" id="loadTip">Выезжаем на стадион…</div>
+</section>
+
+<!-- ======================= СТАРТОВЫЙ ЭКРАН ======================= -->
+<section id="scrSplash" hidden>
+  <div class="logo">
+    <div class="logoText">
+      <div class="l1">КВИЗ-МАТЧ</div>
+      <div class="l2">15 ШАГОВ К&nbsp;МИЛЛИОНУ</div>
+      <div class="l3"><span>Ф<b>У</b>ТБОЛ</span></div>
+    </div>
+  </div>
+  <button class="btn prime" id="btnStart"><span class="bi">⚽</span>ИГРАТЬ</button>
+  <div class="splashHint">15 ВОПРОСОВ · КАРТОЧКИ · ПЕНАЛЬТИ</div>
+</section>
+
 <!-- ======================= ЭКРАН: МЕНЮ ======================= -->
-<section id="scrMenu" class="screen">
+<section id="scrMenu" class="screen" hidden>
   <div class="wrap">
     <div class="logo">
       <img id="logoImg" alt="15 шагов к миллиону: Футбол">
@@ -975,6 +1038,8 @@ const VERSION = "1.0.0";
 const ASSETS = {
   sky:          "assets/stadium_night.webp",          // фон: ночной стадион, горизонталь
   skyPortrait:  "assets/stadium_night_portrait.webp", // вертикальный кадр (для телефона)
+  loading:      "",   // свой фон экрана загрузки (пока пусто — виден общий стадион)
+  splash:       "",   // свой фон стартового экрана
   turf:         "",   // текстура газона под лестницу зон
   ball:         "assets/ball.webp",   // мяч: на лестнице зон и на пенальти
   goal:         "",   // ворота с сеткой для пенальти
@@ -1304,6 +1369,8 @@ function applyAssets(){
   const on  = (cls,cond)=>R.classList.toggle(cls, !!cond);
   set("--img-sky",  ASSETS.sky);                          on("has-sky",  ASSETS.sky);
   set("--img-skyP", ASSETS.skyPortrait);                   on("has-skyP", ASSETS.skyPortrait);
+  set("--img-load", ASSETS.loading);                       on("has-load", ASSETS.loading);
+  set("--img-splash", ASSETS.splash);                       on("has-splash", ASSETS.splash);
   set("--img-turf", ASSETS.turf);                          on("has-turf", ASSETS.turf);
   set("--img-ball", ASSETS.ball);                           on("has-ball", ASSETS.ball);
   set("--img-goal", ASSETS.goal);                           on("has-goal", ASSETS.goal);
@@ -2155,7 +2222,8 @@ function toggleSound(){
 }
 function toMenu(){
   saveMatch();
-  $("ovResult").hidden = true; $("scrGame").hidden = true; $("scrMenu").hidden = false;
+  $("ovResult").hidden = true; $("scrGame").hidden = true;
+  $("scrSplash").hidden = true; $("scrMenu").hidden = false;
   renderMenu();
 }
 
@@ -2262,6 +2330,12 @@ function bindUI(){
   $("btnAgain").onclick  = ()=>{ $("ovResult").hidden = true; startMatch(S ? S.pos : menuPos); };
   $("btnMenu").onclick   = ()=>{ $("ovResult").hidden = true; $("scrGame").hidden = true; $("scrMenu").hidden = false; renderMenu(); };
   $("btnGameMenu").onclick = openGameMenu;
+  $("btnStart").onclick = ()=>{
+    SFX.whistle();                              // первый тап разблокирует WebAudio
+    $("scrMenu").hidden = false;                // меню появляется под уходящим экраном
+    $("scrSplash").classList.add("done");
+    setTimeout(()=>{ $("scrSplash").hidden = true; }, 500);
+  };
 
   $("tOffside").onclick = ()=>useHint("offside");
   $("tCoach").onclick   = ()=>useHint("coach");
@@ -2295,16 +2369,62 @@ function bindUI(){
   document.addEventListener("contextmenu", e=>e.preventDefault());
 }
 
+/* ---------------------------------------------------------------------------
+   ЭКРАН ЗАГРУЗКИ: реальная предзагрузка графики из ASSETS + инициализация SDK.
+   SDK ждём не дольше 2.5 с (доинициализируется в фоне) — экран не должен висеть.
+--------------------------------------------------------------------------- */
+const LOAD_TIPS = [
+  "Выезжаем на стадион…", "Раскатка на газоне…", "Прожекторы прогреваются…",
+  "Судья проверяет мяч…", "Трибуны занимают места…",
+];
+function collectAssetUrls(obj, out){
+  out = out || [];
+  for(const v of Object.values(obj)){
+    if(typeof v === "string"){ if(v) out.push(v); }
+    else if(v && typeof v === "object") collectAssetUrls(v, out);
+  }
+  return out;
+}
+function setLoad(p){
+  const pct = Math.round(Math.max(0, Math.min(1, p)) * 100);
+  $("loadFill").style.width = pct + "%";
+  $("loadPct").textContent = pct + "%";
+}
+function preloadAssets(){
+  const urls = collectAssetUrls(ASSETS);
+  if(!urls.length){ setLoad(1); return Promise.resolve(); }
+  let done = 0;
+  return new Promise(res=>{
+    const finish = ()=>{ done++; setLoad(done/urls.length); if(done>=urls.length) res(); };
+    urls.forEach(u=>{ const im=new Image(); im.onload=finish; im.onerror=finish; im.src=u; });
+    setTimeout(res, 8000);                     // страховка: не висеть из-за одного файла
+  });
+}
+function showSplash(){
+  $("scrLoad").classList.add("done");
+  setTimeout(()=>{ $("scrLoad").hidden = true; }, 500);
+  $("scrSplash").hidden = false;
+  /* Игрок видит интерактивный экран — сообщаем площадке о готовности. */
+  if(sdkReady){ readyForPlayer(); showStickyBanner(); }
+}
 async function boot(){
   loadRecords();
   applyAssets();
   bindUI();
   renderMenu();
   requestAnimationFrame(tickLoop);
-  await initSDK();
-  if(sdkReady){ readyForPlayer(); showStickyBanner(); }
-  loadRecords();          // после инициализации SDK-хранилища читаем ещё раз
-  renderMenu();
+  let tip = 0;
+  const tipTimer = setInterval(()=>{ $("loadTip").textContent = LOAD_TIPS[++tip % LOAD_TIPS.length]; }, 1300);
+  const t0 = Date.now();
+  const sdkPromise = initSDK().then(()=>{ loadRecords(); renderMenu(); });
+  await Promise.all([
+    preloadAssets(),
+    Promise.race([sdkPromise, new Promise(r=>setTimeout(r, 2500))]),
+    new Promise(r=>setTimeout(r, 900)),        // минимум показа, чтобы полоса не мигала
+  ]);
+  clearInterval(tipTimer);
+  setLoad(1);
+  setTimeout(showSplash, 250);
 }
 boot();
 </script>

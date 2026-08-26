@@ -384,6 +384,46 @@ left for a title to be placed later. No text. Wide banner canvas.
 
 ---
 
+## 4.11 Фоны экрана загрузки и стартового экрана
+
+**Слоты:** `ASSETS.loading` и `ASSETS.splash` · **Размер:** 1920×1080 · **Альфа:** не нужна
+
+Оба экрана уже работают: загрузка показывает реальный прогресс, стартовый экран — большая
+кнопка «ИГРАТЬ». Пока свои фоны не положены, под ними виден общий фон стадиона — уже неплохо,
+так что эти два файла опциональны. Если делать, требование то же, что у главного фона:
+**центр и нижняя треть тёмные и пустые** — там логотип, полоса прогресса и кнопка.
+
+Экран загрузки — уместен кадр «до матча»: тоннель, раздевалка, газон крупно:
+
+```
+View from inside a stadium players' tunnel at night, looking out toward a brightly lit football
+pitch in the distance, dark tunnel walls framing the shot, warm golden light spilling in from the
+pitch. The centre and lower half of the frame are dark and empty for interface elements.
+
+Style: polished semi-realistic 3D casual game art, premium mobile game quality, warm golden
+lighting, soft haze, rich saturated colours.
+
+Do not include: text, letters, numbers, watermark, logos, real club crests, people, players.
+
+Aspect ratio 16:9.
+```
+
+Стартовый экран — праздничный кадр, можно с золотым дождём конфетти по краям:
+
+```
+A night football stadium seen from the centre circle, camera low over the grass, packed glowing
+stands all around, four floodlight towers blazing, thin streams of golden confetti falling at the
+left and right edges of the frame. The centre of the frame is dark and empty for a logo and a
+button.
+
+Style: polished semi-realistic 3D casual game art, premium mobile game quality, warm golden
+lighting, soft haze, rich saturated colours, celebratory mood.
+
+Do not include: text, letters, numbers, watermark, logos, real club crests, people, players.
+
+Aspect ratio 16:9.
+```
+
 # Что можно добавить потом
 
 Слотов под это сейчас нет, но добавить их — работа на десять минут, если решите, что нужно:

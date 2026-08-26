@@ -1558,7 +1558,11 @@ function openPenalty(){
   SFX.whistle();
 
   /* Вратарь начинает клониться через полсекунды. */
-  setTimeout(()=>{ if(!penDone) k.classList.add(penLean===0?"lean-l":penLean===2?"lean-r":""); }, 500);
+  setTimeout(()=>{
+    if(penDone) return;
+    const cls = penLean===0 ? "lean-l" : penLean===2 ? "lean-r" : "";   // в центре вратарь стоит ровно
+    if(cls) k.classList.add(cls);
+  }, 500);
 
   let left = 5.0;
   $("penClock").textContent = "5.0";

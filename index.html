@@ -430,7 +430,8 @@ html.has-logo .logoText{display:none}
 .flank .side::after{content:"««"}
 .flank .ico{font-size:clamp(22px,3.4vw,44px);line-height:1;margin-top:.15em;
   filter:drop-shadow(0 0 16px rgba(255,207,61,.35))}
-.flank .ico img{width:clamp(28px,4.4vw,56px);height:clamp(28px,4.4vw,56px);object-fit:contain}
+/* Настоящая иконка крупнее эмодзи-заглушки: у неё есть деталь, ей нужно место. */
+.flank .ico img{width:clamp(44px,6.5vw,92px);height:clamp(44px,6.5vw,92px);object-fit:contain}
 .qmeta .cat img{width:1.15em;height:1.15em;vertical-align:-.2em;margin-right:.15em}
 .flank .nm{font-family:var(--led);font-weight:900;font-size:clamp(12px,1.45vw,20px);
   letter-spacing:.04em}
@@ -984,7 +985,8 @@ const ASSETS = {
   // Карточки для полноэкранной вспышки.
   card:   { y:"", r:"" },
   // Иконки категорий = флангов атаки. Ключи совпадают с CATS в questions.js.
-  cat:    { world:"", euro:"", leagues:"", players:"", rules:"", tactics:"", russia:"" },
+  cat:    { world:"assets/cat_world.webp", euro:"assets/cat_euro.webp",
+            leagues:"", players:"", rules:"", tactics:"", russia:"" },
   // Иконки фланга «ВАША ПОЗИЦИЯ» — по одной на амплуа. Ключи совпадают с ROLES.
   role:   { gk:"", def:"", mid:"", fwd:"" },
   // Иконки панели инструментов.

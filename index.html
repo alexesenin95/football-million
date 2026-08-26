@@ -205,7 +205,6 @@ html.has-splash #scrSplash{background:var(--img-splash) center/cover no-repeat}
   animation:startPulse 1.8s ease-in-out infinite}
 @keyframes startPulse{50%{transform:scale(1.045);
   filter:drop-shadow(0 0 40px rgba(255,190,40,.55))}}
-.splashHint{color:#a9b8bf;font-weight:700;font-size:clamp(11px,1vw,15px);letter-spacing:.08em}
 
 /* ===========================================================================
    ЭКРАН МЕНЮ
@@ -292,16 +291,23 @@ html.has-logo .logoText{display:none}
 .pos.on .posIco{filter:drop-shadow(0 4px 10px rgba(0,0,0,.55)) drop-shadow(0 0 26px rgba(255,207,61,.65))}
 .pos .ttl{font-family:var(--led);font-weight:900;font-size:clamp(13px,1.25vw,18px);
   letter-spacing:.07em;margin:.5em 0 .5em;padding-bottom:.5em;color:#fff;
+  padding-right:clamp(34px,3vw,52px);   /* «НАПАДАЮЩИЙ» не должен заезжать под иконку */
   text-shadow:0 2px 0 rgba(0,0,0,.5);
   border-bottom:1px solid var(--edgeGold)}
-.pos .perk{font-size:clamp(11px,.95vw,14px);color:#b6c4cb;font-weight:700;line-height:1.5}
-.pos .cost{font-size:clamp(10.5px,.86vw,13px);color:#ff8a80;font-weight:800;margin-top:.45em}
+/* Перки — короткие строки-правила с маркером: золотой плюс, красный минус. */
+.pos .plist{display:flex;flex-direction:column;gap:.42em}
+.pos .pline{display:flex;align-items:baseline;gap:.55em;
+  font-size:clamp(11px,.95vw,14px);color:#c3ced4;font-weight:700;line-height:1.35}
+.pos .pline i{flex:none;font-style:normal;font-family:var(--led);font-weight:900;
+  color:var(--gold);width:.9em;text-align:center}
+.pos .pline.minus{color:#ffa39b}
+.pos .pline.minus i{color:#ff6b60}
 /* Фигура игрока на карточке амплуа: подставляется из ASSETS.pos, без неё карточка
    выглядит как раньше. Текст ужимается, чтобы не заезжать под фигуру. */
 .pos .posArt{position:absolute;right:-8%;bottom:0;height:110%;width:auto;
   object-fit:contain;object-position:bottom right;pointer-events:none;opacity:.92;
   filter:drop-shadow(0 8px 18px rgba(0,0,0,.55));transition:opacity .12s,transform .12s}
-.pos.art .num,.pos.art .ttl,.pos.art .perk,.pos.art .cost{position:relative;z-index:1;max-width:66%}
+.pos.art .num,.pos.art .ttl,.pos.art .plist{position:relative;z-index:1;max-width:66%}
 .pos.art .ttl{font-size:.86em}      /* «НАПАДАЮЩИЙ» — самое длинное слово, должно влезать */
 .pos.art:hover .posArt,.pos.on .posArt{opacity:1;transform:scale(1.04)}
 .pos.art::after{opacity:.06}
@@ -314,7 +320,8 @@ html.has-logo .logoText{display:none}
 .recCell .ri{font-size:clamp(15px,1.7vw,24px);line-height:1;flex:none;
   filter:drop-shadow(0 0 10px rgba(255,207,61,.35))}
 .recCell .rt{display:flex;flex-direction:column;line-height:1.15;min-width:0}
-.recCell .rk{font-size:.62em;letter-spacing:.14em;color:var(--ink3);font-weight:800;white-space:nowrap}
+.recCell .rk{font-family:var(--led);font-size:.56em;letter-spacing:.18em;
+  color:#8fa0ab;font-weight:700;white-space:nowrap}
 .recCell .rv{font-family:var(--led);font-weight:900;font-size:clamp(11px,1.1vw,16px);color:var(--gold);
   white-space:nowrap}
 .recCell .rv small{color:var(--ink3);font-size:.7em}
@@ -333,7 +340,10 @@ html.has-logo .logoText{display:none}
   flex-wrap:nowrap;overflow:hidden;
 }
 .bCell{display:flex;flex-direction:column;line-height:1.1;white-space:nowrap}
-.bCell .k{font-size:.62em;letter-spacing:.14em;color:var(--ink3);font-weight:800}
+/* Все мелкие подписи-капсы идут шрифтом табло: так они читаются как элементы
+   стадионной графики, а не как системный текст. */
+.bCell .k{font-family:var(--led);font-size:.56em;letter-spacing:.18em;
+  color:#8fa0ab;font-weight:700}
 .bCell .v{font-family:var(--led);font-weight:800;font-size:1.05em}
 .bCell .v.money{color:var(--gold)}
 .bCell .v.safe{color:var(--lime)}
@@ -461,7 +471,8 @@ html.has-logo .logoText{display:none}
 .flank:hover{transform:translateY(-4px);filter:brightness(1.16)}
 /* Надпись фланга с шевронами: «>>> ЛЕВЫЙ ФЛАНГ <<<». */
 .flank .side{display:flex;align-items:center;justify-content:center;gap:.5em;
-  font-size:.66em;letter-spacing:.18em;color:var(--gold);font-weight:800;width:100%}
+  font-family:var(--led);font-size:.6em;letter-spacing:.2em;color:var(--gold);
+  font-weight:700;width:100%}
 .flank .side::before,.flank .side::after{content:"»»";opacity:.55;letter-spacing:-.1em}
 .flank .side::after{content:"««"}
 .flank .ico{font-size:clamp(22px,3.4vw,44px);line-height:1;margin-top:.15em;
@@ -472,8 +483,8 @@ html.has-logo .logoText{display:none}
 .flank .nm{font-family:var(--led);font-weight:900;font-size:clamp(12px,1.45vw,20px);
   letter-spacing:.04em}
 .flank .ds{font-size:.76em;color:var(--ink2);font-weight:700}
-.flank .cnt{font-size:.68em;color:var(--ink3);font-weight:800;letter-spacing:.08em;
-  width:100%;padding-top:.5em;border-top:1px solid var(--edgeGold)}
+.flank .cnt{font-family:var(--led);font-size:.58em;color:#8fa0ab;font-weight:700;
+  letter-spacing:.16em;width:100%;padding-top:.55em;border-top:1px solid var(--edgeGold)}
 /* Мини-схема поля: показывает, куда пойдёт атака при выборе этого фланга. */
 .fdia{width:100%;height:clamp(38px,7vh,74px);display:block;margin-top:auto;opacity:.9}
 /* Фланг «ВАША ПОЗИЦИЯ» — золотой, чтобы читался как особый. */
@@ -483,8 +494,8 @@ html.has-logo .logoText{display:none}
 
 /* Вопрос */
 #qbox{flex:1;display:flex;flex-direction:column;gap:clamp(6px,1.1vh,14px);min-height:0}
-.qmeta{display:flex;align-items:center;gap:12px;font-size:.76em;font-weight:800;
-  letter-spacing:.1em;color:var(--ink3)}
+.qmeta{display:flex;align-items:center;gap:12px;font-family:var(--led);
+  font-size:.68em;font-weight:700;letter-spacing:.14em;color:#8fa0ab}
 .qmeta .cat{color:var(--lime)}
 .qmeta .dots{margin-left:auto;letter-spacing:.2em;color:var(--gold)}
 #qText{
@@ -557,7 +568,8 @@ html.has-logo .logoText{display:none}
 .tool .ti img{width:1.35em;height:1.35em;display:block}
 .tool .tn{font-family:var(--led);font-weight:800;font-size:.7em;letter-spacing:.04em;
   white-space:nowrap;color:var(--goldPale)}
-.tool .td{font-size:.62em;color:var(--ink3);font-weight:800;letter-spacing:.06em;white-space:nowrap}
+.tool .td{font-family:var(--led);font-size:.55em;color:#8fa0ab;font-weight:700;
+  letter-spacing:.12em;white-space:nowrap}
 .tool:hover:not(:disabled){transform:translateY(-2px);filter:brightness(1.25)}
 .tool:disabled{opacity:.3}
 .tool.used{opacity:.28}
@@ -579,7 +591,8 @@ html.has-logo .logoText{display:none}
 /* Счётчик замен — пунктирная рамка, чтобы читался как счётчик, а не кнопка. */
 .subsBox{--c:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;
   padding:.45em .85em;min-width:5em;--line:rgba(255,255,255,.18)}
-.subsBox .k{font-size:.6em;letter-spacing:.12em;color:var(--ink3);font-weight:800}
+.subsBox .k{font-family:var(--led);font-size:.54em;letter-spacing:.16em;
+  color:#8fa0ab;font-weight:700}
 .subsBox .v{font-family:var(--led);font-weight:900;font-size:1.2em;color:var(--gold)}
 .subsBox.open{--line:var(--edgeGoldLit)}
 .subsBox.open .v{color:var(--goldPale)}
@@ -682,7 +695,8 @@ html.has-host #commentary .mic{display:none}
 .recLine b{font-family:var(--led);color:var(--gold)}
 .stat{padding:.7em;border-radius:12px;background:rgba(255,255,255,.04);
   border:1px solid var(--edge2);text-align:center}
-.stat .k{font-size:.66em;letter-spacing:.1em;color:var(--ink3);font-weight:800}
+.stat .k{font-family:var(--led);font-size:.58em;letter-spacing:.16em;
+  color:#8fa0ab;font-weight:700}
 .stat .v{font-family:var(--led);font-weight:900;font-size:1.25em;color:var(--lime)}
 
 /* Правила */
@@ -823,7 +837,6 @@ html.has-host #commentary .mic{display:none}
     </div>
   </div>
   <button class="btn prime" id="btnStart"><span class="bi">⚽</span>ИГРАТЬ</button>
-  <div class="splashHint">15 ВОПРОСОВ · КАРТОЧКИ · ПЕНАЛЬТИ</div>
 </section>
 
 <!-- ======================= ЭКРАН: МЕНЮ ======================= -->
@@ -1096,14 +1109,19 @@ const BANK_PER_Q = 20;     // сколько максимум капает в б
 
 /* Амплуа: у каждого свой стиль прохождения матча. */
 const POSITIONS = {
-  gk:  { num:"1",  name:"ВРАТАРЬ",        perk:"Своя тема — вратари. «Сейв»: первая ошибка без карточки.",
-         cost:"", subs:3, var:1, bank:0,  bankMax:120, timeBonus:0,  mult:1.0, saves:1 },
-  def: { num:"4",  name:"ЗАЩИТНИК",       perk:"Своя тема — защитники. Гарантия ещё и на 13-м шаге.",
-         cost:"", subs:3, var:2, bank:0,  bankMax:120, timeBonus:0,  mult:1.0, saves:0 },
-  mid: { num:"8",  name:"ПОЛУЗАЩИТНИК",   perk:"Своя тема — полузащитники. Банк времени с 45″ и +10″ к вопросу.",
-         cost:"", subs:3, var:1, bank:45, bankMax:180, timeBonus:10, mult:1.0, saves:0 },
-  fwd: { num:"9",  name:"НАПАДАЮЩИЙ",     perk:"Своя тема — нападающие. +30% к итогу и двойной бонус за «Атаку».",
-         cost:"Но замен только две.", subs:2, var:1, bank:0, bankMax:120, timeBonus:0, mult:1.3, saves:0 },
+  /* perks — короткие строки-правила на карточку; строки с minus:true рисуются красным. */
+  gk:  { num:"1",  name:"ВРАТАРЬ",
+         perks:[{t:"Первая ошибка — прощается"}],
+         subs:3, var:1, bank:0,  bankMax:120, timeBonus:0,  mult:1.0, saves:1 },
+  def: { num:"4",  name:"ЗАЩИТНИК",
+         perks:[{t:"Гарантия и на 13-й зоне"},{t:"Второй VAR"}],
+         subs:3, var:2, bank:0,  bankMax:120, timeBonus:0,  mult:1.0, saves:0 },
+  mid: { num:"8",  name:"ПОЛУЗАЩИТНИК",
+         perks:[{t:"45″ в банке на старте"},{t:"+10″ к каждому вопросу"}],
+         subs:3, var:1, bank:45, bankMax:180, timeBonus:10, mult:1.0, saves:0 },
+  fwd: { num:"9",  name:"НАПАДАЮЩИЙ",
+         perks:[{t:"+30% к выигрышу"},{t:"Атака платит вдвое"},{t:"Замен две вместо трёх",minus:true}],
+         subs:2, var:1, bank:0, bankMax:120, timeBonus:0, mult:1.3, saves:0 },
 };
 const POS_ORDER = ["gk","def","mid","fwd"];
 
@@ -2237,12 +2255,13 @@ function renderMenu(){
        один знак. Если положили фигуру игрока (ASSETS.pos), она заменяет иконку. */
     const ico = icon(ASSETS.role[k], QDB.roles[k].icon);
     b.className = "pos cut" + (k===menuPos ? " on lit" : "") + (art ? " art" : "");
+    const lines = p.perks.map(x=>
+      `<div class="pline${x.minus?" minus":""}"><i>${x.minus?"–":"+"}</i>${x.t}</div>`).join("");
     b.innerHTML = (art ? `<img class="posArt" src="${art}" alt="">` : "") +
       (art ? "" : `<div class="posIco">${ico}</div>`) +
       `<div class="head"><div class="num">${p.num}</div></div>
       <div class="ttl">${p.name}</div>
-      <div class="perk">${p.perk}</div>
-      ${p.cost ? `<div class="cost">${p.cost}</div>` : ""}`;
+      <div class="plist">${lines}</div>`;
     b.onclick = ()=>{ menuPos = k; SFX.click(); renderMenu(); };
     grid.appendChild(b);
   });

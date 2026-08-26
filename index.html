@@ -50,6 +50,8 @@
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 /* Требования Яндекс.Игр: без прокрутки страницы и без выделения текста. */
 html,body{height:100%;overflow:hidden;overscroll-behavior:none;touch-action:manipulation}
+/* На iOS панель браузера съезжает и height:100% обрезает низ экрана — dvh считает честно. */
+@supports (height:100dvh){ html,body{height:100dvh} }
 body{
   background:var(--night); color:var(--ink); font-family:var(--body); font-weight:600;
   user-select:none; -webkit-user-select:none;
@@ -542,7 +544,7 @@ html.has-host #commentary .mic{display:none}
 /* ===========================================================================
    АДАПТИВ: узкие/вертикальные экраны — поле уезжает наверх узкой полосой
 =========================================================================== */
-@media (max-width:900px), (max-aspect-ratio:1/1){
+@media (max-width:640px), (max-aspect-ratio:1/1){
   #feed{display:none}                     /* на узком экране места под хронику нет */
   .arena{flex-direction:column;gap:8px;padding:8px}
   #pitch{width:100%;height:clamp(74px,13vh,110px);flex-direction:row-reverse}
@@ -580,6 +582,53 @@ html.has-host #commentary .mic{display:none}
   .logo .l2{font-size:clamp(26px,6vw,54px)}
   .pos{padding:8px}
   .pos .perk{display:none}
+}
+/* Телефон в горизонтали (широко и низко): поле остаётся слева, но всё поджимается.
+   Без этого блока панель инструментов уезжала за нижний край и становилась недоступной. */
+@media (max-height:560px) and (min-aspect-ratio:1/1){
+  #board{padding:.3em 10px;font-size:.84em}
+  #boardTitle,#board .sep{display:none}
+  #clock{width:36px;height:36px}
+  .arena{padding:6px;gap:8px}
+  #pitch{width:clamp(120px,16vw,170px)}
+  .goalBox{height:18px}
+  .goalBox .gl{font-size:.58em}
+  .zone{font-size:8px;padding:0 4px}
+  .zone .n{width:1.3em}
+  .zone .s{display:none}                       /* «10 000» не влезает — показываем «10К» */
+  .zone .sh{display:block;margin-left:auto;font-size:8px}
+  #qText{min-height:0;padding:.45em .8em;font-size:clamp(12px,1.6vw,16px)}
+  #feed{display:none}                          /* хронике здесь места нет */
+  /* Хроника скрыта, поэтому ответы центрируем — иначе между вопросом и ними зияет полоса. */
+  .answers{grid-auto-rows:minmax(2.1em,3.2em);gap:6px;margin:auto 0}
+  .ans{padding:.3em .6em}
+  .ans .ltr{width:1.8em;height:1.8em}
+  .tool{min-width:4.2em;padding:.3em .5em}
+  #tools{gap:5px}
+  #commentary{min-height:2.1em;padding:.25em 10px;font-size:.78em}
+  .flankRow{flex:0 1 200px}
+}
+/* Узкий телефон: табло не помещалось целиком и часы уезжали за правый край,
+   а короткие подписи зон («450К») не влезали в ячейку шириной 19 px. */
+@media (max-width:420px){
+  #board{gap:5px;padding:.45em 8px;font-size:.9em}
+  #bHalfCell{display:none}                  /* отрезок матча читается по номеру шага */
+  #bCardsCell .k{display:none}              /* подпись убираем, сами карточки остаются */
+  .bCell .k{font-size:.58em;letter-spacing:.08em}
+  #clock{width:38px;height:38px}
+  #btnSound{width:26px;height:26px;font-size:.85em}
+  /* Unbounded — шрифт табло, у него ноль с точкой: на 6 px «100К» превращается в кашу.
+     Для микроподписи берём текстовый Nunito, он читается заметно лучше. */
+  .zone .sh{font-family:var(--body);font-weight:800;font-size:7px;letter-spacing:-.02em}
+  .zone{padding:0}
+}
+/* Невысокий телефон в вертикали: то же поджатие для «поля сверху». */
+@media (max-aspect-ratio:1/1) and (max-height:700px){
+  #pitch{height:clamp(58px,9.5vh,80px)}
+  #qText{min-height:0;padding:.5em .8em}
+  .answers{grid-auto-rows:minmax(2.2em,3.6em);gap:6px}
+  .tool{min-width:3.9em;padding:.45em .45em}   /* высота тапа не ниже ~42px */
+  #commentary{min-height:2.2em;font-size:.8em}
 }
 </style>
 </head>
@@ -627,12 +676,12 @@ html.has-host #commentary .mic{display:none}
     <div id="boardTitle">15 ШАГОВ · ФУТБОЛ</div>
     <div class="sep"></div>
     <div class="bCell"><span class="k">ШАГ</span><span class="v" id="bStep">01/15</span></div>
-    <div class="bCell"><span class="k">ОТРЕЗОК</span><span class="v" id="bHalf">1-Й ТАЙМ</span></div>
+    <div class="bCell" id="bHalfCell"><span class="k">ОТРЕЗОК</span><span class="v" id="bHalf">1-Й ТАЙМ</span></div>
     <div class="sep"></div>
     <div class="bCell"><span class="k">НА СЧЕТУ</span><span class="v money" id="bMoney">0 ₽</span></div>
     <div class="bCell"><span class="k">ГАРАНТИЯ</span><span class="v safe" id="bSafe">0 ₽</span></div>
     <div class="grow"></div>
-    <div class="bCell"><span class="k">КАРТОЧКИ</span><span id="cards"></span></div>
+    <div class="bCell" id="bCardsCell"><span class="k">КАРТОЧКИ</span><span id="cards"></span></div>
     <button id="btnSound" title="Звук">🔊</button>
     <div id="clock">
       <svg viewBox="0 0 44 44"><circle class="ringBg" cx="22" cy="22" r="19"></circle>

@@ -209,8 +209,12 @@ html.has-splash #scrSplash{background:var(--img-splash) center/cover no-repeat}
 /* ===========================================================================
    ЭКРАН МЕНЮ
 =========================================================================== */
-#scrMenu{align-items:center;justify-content:center;padding:2vh 3vw;gap:2vh;overflow:auto}
-#scrMenu .wrap{width:min(1000px,96vw);display:flex;flex-direction:column;align-items:center;gap:2.2vh}
+/* Центрирование через margin:auto на .wrap: при переполнении flex-центр обрезает
+   верх без возможности доскроллить, а auto-отступы честно превращаются в прокрутку. */
+#scrMenu{padding:max(2vh,env(safe-area-inset-top)) 3vw max(2vh,env(safe-area-inset-bottom));
+  overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+#scrMenu .wrap{width:100%;max-width:1000px;margin:auto;display:flex;flex-direction:column;
+  align-items:center;gap:2.2vh}
 .logo{text-align:center;line-height:.95;width:100%}
 #logoImg{display:none;width:100%;max-width:min(720px,92vw);height:auto}
 html.has-logo #logoImg{display:block}
@@ -740,6 +744,14 @@ html.has-host #commentary .mic{display:none}
   color:#8fa0ab;font-weight:700;padding:.6em .4em}
 .tutSkip:hover{color:var(--gold)}
 
+/* Список правил во всплывающем «Как играть» */
+.introList{display:flex;flex-direction:column;gap:.9em;text-align:left;max-width:30em;margin:0 auto}
+.introRow{display:flex;gap:.8em;align-items:flex-start;color:#c3ced4;font-weight:700;
+  font-size:clamp(12.5px,1.05vw,15.5px);line-height:1.5}
+.introRow .ii{flex:none;font-size:1.5em;line-height:1.15;
+  filter:drop-shadow(0 0 10px rgba(255,207,61,.35))}
+.introRow b{color:var(--gold)}
+
 /* Салют/конфетти при голе */
 #confetti{position:absolute;inset:0;pointer-events:none;z-index:50;overflow:hidden}
 .conf{position:absolute;width:9px;height:14px;border-radius:2px;animation:fall linear forwards}
@@ -785,7 +797,29 @@ html.has-host #commentary .mic{display:none}
   .answers{grid-template-columns:1fr}
   #board{flex-wrap:nowrap;gap:6px;font-size:.92em}
   #boardTitle,#board .sep{display:none}
-  .posGrid{grid-template-columns:1fr 1fr}
+  /* Карточки амплуа — одним столбцом: Unbounded-заголовки не переносятся,
+     и две колонки неизбежно выдавливают друг друга за экран. */
+  .posGrid{grid-template-columns:1fr;gap:8px}
+  #scrMenu .wrap{gap:1.6vh}
+  .logo .l2{font-size:clamp(26px,10vw,54px)}
+  .logo .l1{letter-spacing:.3em}
+  .pos{padding:10px 14px;min-width:0}
+  .pos .head{min-height:0;float:left;margin-right:.55em}
+  .pos .num{font-size:clamp(24px,7vw,34px)}
+  .pos .ttl{margin:.15em 0 .45em;padding-right:clamp(44px,13vw,60px)}
+  .pos .plist{clear:left}
+  .pos .pline{font-size:clamp(11px,3.2vw,13.5px)}
+  .pos .posIco{right:4%;top:50%;transform:translateY(-50%)}
+  .pos .posIco img{width:clamp(44px,12vw,58px);height:clamp(44px,12vw,58px)}
+  /* Рельс: на узком экране цифры только у вех — 1, 5, 10, 15 и следующей зоны */
+  .railDot b{display:none}
+  .railDot.m5 b,.railDot.next b{display:block}
+  .rail{padding:.45em .3em}
+  /* Полоса рекордов — сеткой 2x2, разделители убрать */
+  .recBar{display:grid;grid-template-columns:1fr 1fr;gap:.7em .5em;justify-items:start}
+  .recCell + .recCell{padding-left:0;border-left:0}
+  .menuRow{width:100%}
+  .menuRow .btn{flex:1 1 100%;justify-content:center}
   .tool{min-width:4.4em;padding:.45em .5em}
 }
 @media (max-height:520px){
@@ -889,12 +923,6 @@ html.has-host #commentary .mic{display:none}
       <span class="railG l"></span>
       <div class="railField" id="railField"></div>
       <span class="railG r"></span>
-    </div>
-
-    <div class="hint" style="text-align:center;max-width:44em">
-      Пятнадцать верных ответов — пятнадцать зон поля от своей штрафной до чужих ворот.
-      Ошибка здесь не выбивает сразу: сначала <b style="color:var(--yellow)">жёлтая</b>, и только вторая — <b style="color:var(--red)">красная</b>.
-      Амплуа задаёт вашу тему: через шаг среди флангов атаки будет <b style="color:var(--gold)">своя позиция</b> — вопросы про игроков вашего амплуа.
     </div>
 
     <div style="width:100%">
@@ -2421,7 +2449,8 @@ function renderRail(){
   const next = done >= 15 ? 0 : done + 1;
   $("railField").innerHTML = Array.from({length:15}, (_,i)=>{
     const n = i+1;
-    const cls = n <= done ? "done" : n === next ? "next" : "";
+    let cls = n <= done ? "done" : n === next ? "next" : "";
+    if(n===1 || n%5===0) cls += " m5";
     return `<span class="railDot ${cls}"><b>${n}</b><i></i></span>`;
   }).join("");
 }
@@ -2577,6 +2606,27 @@ function bindUI(){
     $("scrMenu").hidden = false;                // меню появляется под уходящим экраном
     $("scrSplash").classList.add("done");
     setTimeout(()=>{ $("scrSplash").hidden = true; }, 500);
+    /* Первый вход: правила одной карточкой, дальше — выбор амплуа. */
+    if(Storage.get("f15_intro_v1") !== "1"){
+      setTimeout(()=>{
+        flash({
+          art:`<div style="font-size:clamp(30px,5vw,56px)">⚽</div>`,
+          ttl:"КАК ИГРАТЬ",
+          sub:`<div class="introList">
+            <div class="introRow"><span class="ii">🥅</span><span><b>15 зон до чужих ворот.</b>
+              Верный ответ двигает мяч вперёд, золотые зоны — несгораемые.</span></div>
+            <div class="introRow"><span class="ii">🟨</span><span>Ошибка — <b>жёлтая</b> и откат
+              к гарантии. Вторая — <b>красная</b>… но останется пенальти.</span></div>
+            <div class="introRow"><span class="ii">⭐</span><span><b>Амплуа задаёт твою тему</b>
+              и бонус — выбери его на следующем экране.</span></div>
+          </div>`,
+          buttons:[{t:"ВЫБРАТЬ АМПЛУА", cls:"prime", fn:()=>{
+            Storage.set("f15_intro_v1","1"); hideFlash();
+          }}],
+          noClose:true
+        });
+      }, 550);
+    }
   };
 
   $("tOffside").onclick = ()=>useHint("offside");

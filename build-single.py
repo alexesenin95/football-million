@@ -46,6 +46,24 @@ def build(bare=False):
         raise SystemExit("в index.html нет подключения questions.js")
     src = src.replace(tag, "<script>\n" + questions + "\n</script>")
 
+    # Подключённая графика из ASSETS (пути вида "assets/...") -> data:URI.
+    # В репозитории игра ссылается на файлы, но одиночный файл должен нести их в себе.
+    MIME = {".webp": "image/webp", ".png": "image/png", ".jpg": "image/jpeg",
+            ".jpeg": "image/jpeg", ".svg": "image/svg+xml", ".gif": "image/gif"}
+    def inline_asset(m):
+        rel = m.group(1)
+        path = os.path.join(HERE, rel)
+        ext = os.path.splitext(rel)[1].lower()
+        if ext in (".woff2",):                       # шрифты уже вшиты выше
+            return m.group(0)
+        if not os.path.isfile(path):
+            raise SystemExit("в ASSETS указан несуществующий файл: %s" % rel)
+        if ext not in MIME:
+            raise SystemExit("неизвестный тип файла в ASSETS: %s" % rel)
+        data = base64.b64encode(open(path, "rb").read()).decode()
+        return '"data:%s;base64,%s"' % (MIME[ext], data)
+    src = re.sub(r'"(assets/[^"]+)"', inline_asset, src)
+
     if bare:
         # Снимаем обвязку документа: <title> должен остаться первой строкой.
         src = re.sub(r'^<!DOCTYPE html>\s*<html lang="ru">\s*<head>\s*', "", src)

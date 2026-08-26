@@ -284,11 +284,13 @@ html.has-logo .logoText{display:none}
 #play{flex:1;min-width:0;display:flex;flex-direction:column;gap:clamp(6px,1.1vh,14px)}
 
 /* Выбор фланга */
-#flanks{flex:1;display:flex;flex-direction:column;gap:clamp(6px,1.2vh,14px);min-height:0}
+#flanks{flex:1;display:flex;flex-direction:column;justify-content:center;
+  gap:clamp(6px,1.2vh,14px);min-height:0}
 #flanks .fTitle{text-align:center;font-family:var(--led);font-weight:800;
   font-size:clamp(12px,1.5vw,19px);letter-spacing:.1em;color:var(--ink2)}
 #flanks .fTitle b{color:var(--lime)}
-.flankRow{flex:1;display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(6px,1vw,14px);min-height:0}
+.flankRow{flex:0 1 420px;display:grid;grid-template-columns:repeat(3,1fr);
+  gap:clamp(6px,1vw,14px);min-height:0}
 .flank{
   position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;
   gap:.5em;border-radius:16px;padding:1em .8em;text-align:center;overflow:hidden;
@@ -307,6 +309,12 @@ html.has-logo .logoText{display:none}
 .flank .nm{font-family:var(--led);font-weight:800;font-size:clamp(11px,1.25vw,16px);letter-spacing:.05em}
 .flank .ds{font-size:.78em;color:var(--ink2);font-weight:700}
 .flank .cnt{font-size:.7em;color:var(--ink3);font-weight:800;letter-spacing:.08em}
+/* Фланг «ВАША ПОЗИЦИЯ»: вопросы про игроков вашего амплуа — отмечен золотом. */
+.flank.own{border-color:rgba(255,207,61,.45);
+  background:linear-gradient(180deg,rgba(48,38,10,.92),rgba(18,14,4,.95))}
+.flank.own::before{background:radial-gradient(circle,rgba(255,207,61,.22),transparent 70%)}
+.flank.own .nm{color:var(--gold)}
+.flank.own:hover{border-color:var(--gold);box-shadow:0 0 0 2px rgba(255,207,61,.35),0 14px 34px rgba(0,0,0,.5)}
 
 /* Вопрос */
 #qbox{flex:1;display:flex;flex-direction:column;gap:clamp(6px,1.1vh,14px);min-height:0}
@@ -585,6 +593,7 @@ html.has-host #commentary .mic{display:none}
     <div class="hint" style="text-align:center;max-width:44em">
       Пятнадцать верных ответов — пятнадцать зон поля от своей штрафной до чужих ворот.
       Ошибка здесь не выбивает сразу: сначала <b style="color:var(--yellow)">жёлтая</b>, и только вторая — <b style="color:var(--red)">красная</b>.
+      Амплуа задаёт вашу тему: через шаг среди флангов атаки будет <b style="color:var(--gold)">своя позиция</b> — вопросы про игроков вашего амплуа.
     </div>
 
     <div style="width:100%">
@@ -782,7 +791,9 @@ const ASSETS = {
   // Карточки для полноэкранной вспышки.
   card:   { y:"", r:"" },
   // Иконки категорий = флангов атаки. Ключи совпадают с CATS в questions.js.
-  cat:    { world:"", clubs:"", players:"", rules:"", tactics:"", russia:"" },
+  cat:    { world:"", euro:"", leagues:"", players:"", rules:"", tactics:"", russia:"" },
+  // Иконки фланга «ВАША ПОЗИЦИЯ» — по одной на амплуа. Ключи совпадают с ROLES.
+  role:   { gk:"", def:"", mid:"", fwd:"" },
   // Иконки панели инструментов.
   tool:   { offside:"", coach:"", stands:"", var:"", time:"", attack:"", cash:"" },
   // Комментатор: портрет в строке трансляции, пять состояний.
@@ -800,6 +811,10 @@ const REC_KEY  = "f15_rec_v1";
 const LADDER = [1000,2000,3000,5000,10000, 15000,25000,50000,100000,200000, 300000,450000,600000,800000,1000000];
 /* Базовые несгораемые зоны (конец 1-го и 2-го тайма). Защитник получает ещё одну. */
 const SAFE_BASE = [5,10];
+/* Как часто среди трёх флангов появляется «ВАША ПОЗИЦИЯ» — фланг с вопросами
+   про игроков вашего амплуа. 1 — на каждом шаге, 2 — через шаг, 3 — каждый третий.
+   Через шаг подобрано так, чтобы фланг оставался событием, а не постоянным фоном. */
+const ROLE_FLANK_EVERY = 2;
 /* Время на вопрос по сложности, секунды. */
 const TIME_BY_TIER = {1:40, 2:45, 3:55, 4:70, 5:90};
 /* Банк добавленного времени */
@@ -808,13 +823,13 @@ const BANK_PER_Q = 20;     // сколько максимум капает в б
 
 /* Амплуа: у каждого свой стиль прохождения матча. */
 const POSITIONS = {
-  gk:  { num:"1",  name:"ВРАТАРЬ",        perk:"«Сейв»: первая ошибка гасится без карточки.",
+  gk:  { num:"1",  name:"ВРАТАРЬ",        perk:"Своя тема — вратари. «Сейв»: первая ошибка без карточки.",
          cost:"", subs:3, var:1, bank:0,  bankMax:120, timeBonus:0,  mult:1.0, saves:1 },
-  def: { num:"4",  name:"ЗАЩИТНИК",       perk:"Гарантия ещё и на 13-м шаге. Две проверки VAR.",
+  def: { num:"4",  name:"ЗАЩИТНИК",       perk:"Своя тема — защитники. Гарантия ещё и на 13-м шаге.",
          cost:"", subs:3, var:2, bank:0,  bankMax:120, timeBonus:0,  mult:1.0, saves:0 },
-  mid: { num:"8",  name:"ПОЛУЗАЩИТНИК",   perk:"Банк времени стартует с 45″, потолок 180″, +10″ к вопросу.",
+  mid: { num:"8",  name:"ПОЛУЗАЩИТНИК",   perk:"Своя тема — полузащитники. Банк времени с 45″ и +10″ к вопросу.",
          cost:"", subs:3, var:1, bank:45, bankMax:180, timeBonus:10, mult:1.0, saves:0 },
-  fwd: { num:"9",  name:"НАПАДАЮЩИЙ",     perk:"+30% к итогу и двойной бонус за «Атаку».",
+  fwd: { num:"9",  name:"НАПАДАЮЩИЙ",     perk:"Своя тема — нападающие. +30% к итогу и двойной бонус за «Атаку».",
          cost:"Но замен только две.", subs:2, var:1, bank:0, bankMax:120, timeBonus:0, mult:1.3, saves:0 },
 };
 const POS_ORDER = ["gk","def","mid","fwd"];
@@ -1037,7 +1052,7 @@ function newMatch(posKey){
     step:1,                    // текущий шаг
     phase:"flank",             // flank | ask | lock | reveal | over
     q:null, opts:null, correct:-1, chosen:-1,
-    cat:null, flanks:null, freeFlank:-1,
+    flank:null, flanks:null, freeFlank:-1,
     time:0, timeMax:0,
     bank:P.bank, bankMax:P.bankMax,
     subs:P.subs, subWindow:null,     // id вопроса, на котором окно замен уже открыто
@@ -1234,36 +1249,54 @@ function offerFlanks(){
   $("qbox").hidden = true; $("flanks").hidden = false;
   $("flankStep").textContent = `ШАГ ${S.step} · ${fmtMoney(LADDER[S.step-1])}`;
 
-  /* Три категории из шести: стараемся не повторять использованные на прошлом шаге. */
+  /* Три фланга. Один из них через каждые ROLE_FLANK_EVERY шагов — «ВАША ПОЗИЦИЯ»:
+     вопросы про игроков вашего амплуа. Остальные — обычные категории, стараемся
+     не повторять те, что предлагались на прошлом шаге. */
+  const tier = QDB.tierByStep(S.step);
+  const roleTurn = ((S.step-1) % ROLE_FLANK_EVERY === 0) && QDB.rolePool(S.pos, tier).length > 0;
+
   const all = Object.keys(QDB.cats);
   const recent = new Set((S.lastFlanks||[]));
   const fresh = all.filter(c=>!recent.has(c));
-  const poolSrc = fresh.length>=3 ? fresh : all;
-  const pool = poolSrc.slice().sort(()=>Math.random()-.5).slice(0,3);
-  S.flanks = pool;
-  S.freeFlank = Math.random()<.45 ? Math.floor(Math.random()*3) : -1;   // бонусная «свободная зона»
+  const need = roleTurn ? 2 : 3;
+  const poolSrc = fresh.length>=need ? fresh : all;
+  const list = poolSrc.slice().sort(()=>Math.random()-.5).slice(0,need)
+                      .map(c=>({ kind:"cat", key:c }));
+  if(roleTurn) list.push({ kind:"role", key:S.pos });
+  S.flanks = list.sort(()=>Math.random()-.5);       // на каком фланге что окажется — случайно
+
+  /* Бонусная «свободная зона» достаётся только обычной категории: у «своей позиции»
+     на карточке и так своя подпись, две метки на одной карточке не помещаются. */
+  const plain = S.flanks.map((f,i)=>f.kind==="cat"?i:-1).filter(i=>i>=0);
+  S.freeFlank = (Math.random()<.45 && plain.length) ? plain[Math.floor(Math.random()*plain.length)] : -1;
 
   const row = $("flankRow"); row.innerHTML = "";
-  pool.forEach((cat,i)=>{
-    const c = QDB.cats[cat];
+  S.flanks.forEach((f,i)=>{
+    const isRole = f.kind==="role";
+    const meta = isRole ? QDB.roles[f.key] : QDB.cats[f.key];
+    const img  = isRole ? ASSETS.role[f.key] : ASSETS.cat[f.key];
+    const tag  = isRole ? '<span class="cnt" style="color:var(--gold)">ВАША ПОЗИЦИЯ</span>'
+               : i===S.freeFlank ? '<span class="cnt" style="color:var(--lime)">СВОБОДНАЯ ЗОНА · +15″</span>'
+               : '<span class="cnt">ЗАЩИТА ГОТОВА</span>';
     const b = document.createElement("button");
-    b.className = "flank";
+    b.className = "flank" + (isRole ? " own" : "");
     b.innerHTML = `<span class="side">${SIDES[i]}</span>
-      <span class="ico">${icon(ASSETS.cat[cat], c.icon)}</span>
-      <span class="nm">${c.short}</span>
-      <span class="ds">${c.name}</span>
-      ${i===S.freeFlank ? '<span class="cnt" style="color:var(--lime)">СВОБОДНАЯ ЗОНА · +15″</span>' : '<span class="cnt">ЗАЩИТА ГОТОВА</span>'}`;
-    b.onclick = ()=>{ SFX.kick(); chooseFlank(cat, i); };
+      <span class="ico">${icon(img, meta.icon)}</span>
+      <span class="nm">${meta.short}</span>
+      <span class="ds">${meta.name}</span>
+      ${tag}`;
+    b.onclick = ()=>{ SFX.kick(); chooseFlank(f, i); };
     row.appendChild(b);
   });
   say("flank");
   renderAll();
   saveMatch();
 }
-function chooseFlank(cat, idx){
-  if(S.phase!=="flank") return;
-  S.lastFlanks = S.flanks.slice();
-  S.cat = cat;
+function chooseFlank(f, idx){
+  if(S.phase!=="flank" || !f) return;
+  /* В «недавних» держим только обычные категории: «своя позиция» приходит по расписанию. */
+  S.lastFlanks = S.flanks.filter(x=>x.kind==="cat").map(x=>x.key);
+  S.flank = f;
   const extra = (idx===S.freeFlank) ? 15 : 0;
   askQuestion(extra);
 }
@@ -1273,9 +1306,11 @@ function shuffled(arr){ const a=arr.slice(); for(let i=a.length-1;i>0;i--){ cons
 function askQuestion(extraTime){
   const tier = QDB.tierByStep(S.step);
   const used = new Set(S.used);
-  const q = QDB.pick(S.cat, tier, used);
+  const q = S.flank.kind==="role"
+    ? QDB.pickRole(S.flank.key, tier, used)     // вопрос про игроков вашего амплуа
+    : QDB.pick(S.flank.key, tier, used);
   S.used.push(q.id);
-  S.q = { id:q.id, q:q.q, fact:q.fact||"", cat:q.cat, tier:q.tier };
+  S.q = { id:q.id, q:q.q, fact:q.fact||"", cat:q.cat, tier:q.tier, role:q.role||null };
 
   const ci = QDB.correctIndex(q);
   const pairs = q.a.map((text,i)=>({text, ok:i===ci}));
@@ -1288,8 +1323,11 @@ function askQuestion(extraTime){
   S.time = S.timeMax;
 
   $("flanks").hidden = true; $("qbox").hidden = false;
-  const c = QDB.cats[q.cat];
-  $("qCat").innerHTML = `${icon(ASSETS.cat[q.cat], c.icon)} ${c.short}`;
+  const isRole = S.flank.kind==="role";
+  const c = isRole ? QDB.roles[S.flank.key] : QDB.cats[q.cat];
+  const cImg = isRole ? ASSETS.role[S.flank.key] : ASSETS.cat[q.cat];
+  $("qCat").innerHTML = `${icon(cImg, c.icon)} ${c.short}`;
+  $("qCat").style.color = isRole ? "var(--gold)" : "";
   $("qStep").textContent = `ШАГ ${S.step} · ${fmtMoney(LADDER[S.step-1])}${S.attack?" · ⚡АТАКА":""}`;
   $("qDots").textContent = "●".repeat(q.tier) + "○".repeat(5-q.tier);
   $("qText").textContent = q.q;
@@ -1909,7 +1947,12 @@ const RULES_HTML = `
 
 <h4>НАПРАВЛЕНИЕ АТАКИ</h4>
 <ul>
-<li>Перед каждым вопросом вы сами выбираете фланг — то есть категорию вопроса.</li>
+<li>Перед каждым вопросом вы сами выбираете фланг — то есть категорию вопроса.
+Категорий семь: сборные и мундиали, еврокубки, европейские лиги, игроки и рекорды,
+правила и судейство, тактика и термины, российский футбол.</li>
+<li>Через шаг один из трёх флангов — <b style="color:var(--gold)">ваша позиция</b>:
+вопросы про игроков вашего амплуа. Вратарь получает вопросы про вратарей,
+нападающий — про нападающих. Своя тема — самый надёжный фланг в матче.</li>
 <li>Иногда один из флангов помечен как <b>свободная зона</b>: там дадут +15″ к раздумью.</li>
 </ul>
 
@@ -1955,7 +1998,7 @@ function bindUI(){
     }
     if(S.phase==="flank"){
       const map = {"1":0,"2":1,"3":2};
-      if(k in map && S.flanks) chooseFlank(S.flanks[map[k]], map[k]);
+      if(k in map && S.flanks && S.flanks[map[k]]) chooseFlank(S.flanks[map[k]], map[k]);
     }
     if(e.key==="Enter" && !$("ovFlash").hidden){
       const b = $("flashRow").querySelector(".btn"); if(b) b.click();

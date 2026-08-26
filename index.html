@@ -32,12 +32,18 @@
    жёлтый и красный — только для карточек (нигде больше, чтобы не путать).
 =========================================================================== */
 :root{
-  --night:#050a10; --night2:#0a141f;
+  --night:#04080f; --night2:#0a1524;
   --panel:rgba(9,17,26,.90); --panel2:rgba(14,26,38,.94);
-  --edge:rgba(200,255,46,.20); --edge2:rgba(255,255,255,.09);
+  /* Стекло панели: холодный синий с уходом в глубокую тень к низу. */
+  --glass:linear-gradient(160deg,rgba(18,31,50,.94),rgba(6,12,21,.97));
+  --glassLit:linear-gradient(160deg,rgba(30,46,70,.95),rgba(10,18,30,.97));
+  --edge:rgba(255,207,61,.24); --edge2:rgba(255,255,255,.09);
   --grass:#0d6b31; --grass2:#0f7a38; --grass3:#0a5527;
   --lime:#c8ff2e; --limeDim:#8fbf22;
-  --gold:#ffcf3d; --goldDim:#a8842a;
+  /* Золото — главный акцент: волосяные рамки, цифры, суммы, кнопки. */
+  --gold:#ffcf3d; --gold2:#f2b325; --goldDeep:#7d5a0c; --goldPale:#fff5cf; --goldDim:#a8842a;
+  --edgeGold:rgba(255,207,61,.36); --edgeGoldLit:rgba(255,207,61,.85);
+  --cut:14px;                                 /* размер скоса угла у панелей */
   --yellow:#ffd60a; --red:#ff3b30;
   --ink:#eaf2ea; --ink2:#8fa3a8; --ink3:#586a70;
   /* Слоты под графику: пока пусто — работают CSS-заглушки, см. ASSETS в скрипте. */
@@ -116,28 +122,49 @@ html.has-keeper .keeper{inset:0;left:0;width:auto;height:auto;border-radius:0;bo
    ОБЩИЕ ЭЛЕМЕНТЫ: LED-текст, кнопки, панели
 =========================================================================== */
 .led{font-family:var(--led);font-weight:800;letter-spacing:.06em;
-  text-shadow:0 0 14px rgba(200,255,46,.35)}
+  text-shadow:0 0 14px rgba(255,207,61,.3)}
 .panel{background:var(--panel);border:1px solid var(--edge2);border-radius:var(--r);
   backdrop-filter:blur(8px)}
+
+/* ---------------------------------------------------------------------------
+   СКОШЕННАЯ РАМКА — базовый элемент оформления.
+   Два слоя с одинаковым clip-path: внешний даёт золотую волосяную линию по всему
+   контуру, включая диагональ (обычный border на диагонали не рисуется), внутренний —
+   стекло панели. isolation:isolate держит оба слоя за текстом, но внутри элемента,
+   поэтому разметку менять не нужно.
+--------------------------------------------------------------------------- */
+.cut{position:relative;isolation:isolate;background:transparent;--c:var(--cut);--line:var(--edgeGold)}
+.cut::before,.cut::after{content:"";position:absolute;z-index:-1;
+  clip-path:polygon(var(--c) 0,100% 0,100% calc(100% - var(--c)),calc(100% - var(--c)) 100%,0 100%,0 var(--c))}
+.cut::before{inset:0;background:var(--line)}
+.cut::after{inset:1px;background:var(--glass)}
+.cut.lit{--line:var(--edgeGoldLit)}
+.cut.lit::after{background:var(--glassLit)}
 .btn{
   font-family:var(--led);font-weight:800;letter-spacing:.06em;
-  padding:.85em 1.5em;border-radius:12px;position:relative;
-  background:linear-gradient(180deg,#1b2c3c,#0e1a26);
-  border:1px solid var(--edge2);color:var(--ink);
-  box-shadow:0 6px 0 rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.08);
-  transition:transform .09s, box-shadow .09s, filter .15s;
+  padding:.85em 1.6em;position:relative;isolation:isolate;color:var(--ink);
+  --c:12px;--line:var(--edgeGold);
+  display:inline-flex;align-items:center;justify-content:center;gap:.6em;
+  transition:transform .09s, filter .15s;
 }
-.btn:hover:not(:disabled){filter:brightness(1.18)}
-.btn:active:not(:disabled){transform:translateY(4px);box-shadow:0 2px 0 rgba(0,0,0,.45)}
+.btn::before,.btn::after{content:"";position:absolute;z-index:-1;
+  clip-path:polygon(var(--c) 0,100% 0,100% calc(100% - var(--c)),calc(100% - var(--c)) 100%,0 100%,0 var(--c))}
+.btn::before{inset:0;background:var(--line)}
+.btn::after{inset:1px;background:linear-gradient(180deg,#16273c,#080e18);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.07)}
+.btn:hover:not(:disabled){filter:brightness(1.2)}
+.btn:active:not(:disabled){transform:translateY(2px)}
 .btn:disabled{opacity:.4}
-.btn.prime{
-  background:linear-gradient(180deg,var(--lime),#8ec91c);color:#0b1508;
-  border-color:rgba(255,255,255,.35);
-  box-shadow:0 7px 0 #4d7a06, 0 0 32px rgba(200,255,46,.35);
-}
-.btn.gold{background:linear-gradient(180deg,var(--gold),#c99a13);color:#231703;
-  box-shadow:0 7px 0 #7a5a06, 0 0 28px rgba(255,207,61,.3)}
-.btn.danger{background:linear-gradient(180deg,#ff6a5e,#c62a20);color:#fff;box-shadow:0 7px 0 #741510}
+/* Золотая кнопка действия: литая пластина с фаской и подсветкой. */
+.btn.prime,.btn.gold{--line:var(--goldPale);color:#2a1c02;text-shadow:0 1px 0 rgba(255,255,255,.35)}
+.btn.prime::after,.btn.gold::after{
+  background:linear-gradient(180deg,var(--goldPale) 0%,var(--gold) 22%,var(--gold2) 55%,#c98f0d 100%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.6), inset 0 -2px 0 rgba(0,0,0,.28)}
+.btn.prime{filter:drop-shadow(0 0 26px rgba(255,190,40,.35))}
+.btn.danger{--line:#ffb3ad;color:#fff;text-shadow:0 1px 0 rgba(0,0,0,.35)}
+.btn.danger::after{background:linear-gradient(180deg,#ff7d70,#b0231a);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
+.btn .bi{font-size:1.15em;line-height:1}
 .hint{color:var(--ink2);font-size:.8em;font-weight:700}
 
 /* ===========================================================================
@@ -145,38 +172,93 @@ html.has-keeper .keeper{inset:0;left:0;width:auto;height:auto;border-radius:0;bo
 =========================================================================== */
 #scrMenu{align-items:center;justify-content:center;padding:2vh 3vw;gap:2vh;overflow:auto}
 #scrMenu .wrap{width:min(1000px,96vw);display:flex;flex-direction:column;align-items:center;gap:2.2vh}
-.logo{text-align:center;line-height:.95}
+.logo{text-align:center;line-height:.95;width:100%}
 #logoImg{display:none;width:100%;max-width:min(720px,92vw);height:auto}
 html.has-logo #logoImg{display:block}
 html.has-logo .logoText{display:none}
-.logo .l1{font-family:var(--led);font-weight:800;font-size:clamp(15px,2.6vw,30px);
-  color:var(--ink2);letter-spacing:.22em}
-.logo .l2{font-family:var(--led);font-weight:900;font-size:clamp(34px,7.4vw,92px);
-  background:linear-gradient(180deg,#fff6d0,var(--gold) 55%,#a06f00);
-  -webkit-background-clip:text;background-clip:text;color:transparent;
-  filter:drop-shadow(0 4px 0 rgba(0,0,0,.5)) drop-shadow(0 0 34px rgba(255,207,61,.45));
-  letter-spacing:.02em}
-.logo .l3{font-family:var(--led);font-weight:800;font-size:clamp(17px,3.4vw,40px);
-  color:var(--lime);letter-spacing:.34em;text-shadow:0 0 26px rgba(200,255,46,.6);margin-top:.25em}
-.logo .l3 b{color:#fff}
+/* Надзаголовок в рамке-плашке со скошенными «плечами», как на табло стадиона. */
+.logo .l1{display:flex;align-items:center;justify-content:center;gap:.9em;
+  font-family:var(--led);font-weight:800;font-size:clamp(11px,1.6vw,18px);
+  color:var(--goldPale);letter-spacing:.42em;margin-bottom:.35em}
+.logo .l1::before,.logo .l1::after{content:"";height:1px;flex:1;max-width:22%;
+  background:linear-gradient(90deg,transparent,var(--edgeGoldLit))}
+.logo .l1::after{background:linear-gradient(270deg,transparent,var(--edgeGoldLit))}
+/* Литое золото с фаской: слои drop-shadow дают экструзию, градиент — металл. */
+.logo .l2{font-family:var(--led);font-weight:900;font-size:clamp(32px,7.2vw,90px);
+  background:linear-gradient(180deg,#fffae3 0%,#ffe27a 20%,#f6bb22 44%,#8f5f06 56%,
+    #ffd863 76%,#fff6cd 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;letter-spacing:.01em;
+  filter:drop-shadow(0 2px 0 #6d4903) drop-shadow(0 4px 0 #462f02)
+         drop-shadow(0 12px 20px rgba(0,0,0,.85)) drop-shadow(0 0 46px rgba(255,190,40,.35))}
+.logo .l3{display:flex;align-items:center;justify-content:center;gap:.8em;
+  font-family:var(--led);font-weight:800;font-size:clamp(15px,3vw,34px);
+  color:var(--gold);letter-spacing:.4em;margin-top:.3em;
+  text-shadow:0 0 24px rgba(255,207,61,.55)}
+.logo .l3::before,.logo .l3::after{content:"";height:2px;width:clamp(24px,5vw,70px);
+  background:linear-gradient(90deg,transparent,var(--gold))}
+.logo .l3::after{background:linear-gradient(270deg,transparent,var(--gold))}
+.logo .l3 b{color:var(--goldPale)}
+
+/* ---------------------------------------------------------------------------
+   РЕЛЬС ПРОГРЕССА в меню: пятнадцать зон между двумя воротами.
+   Показывает личный рекорд — до какой зоны игрок доходил дальше всего,
+   и подсвечивает следующую. Не декорация: цифры настоящие.
+--------------------------------------------------------------------------- */
+.rail{--c:16px;width:100%;display:flex;align-items:stretch;gap:0;padding:.55em .5em}
+.rail::after{background:linear-gradient(180deg,#0e5c2b,#07301a)}
+.railG{flex:none;width:clamp(20px,3vw,38px);align-self:center;height:62%;
+  border:2px solid rgba(255,255,255,.75);border-radius:3px;
+  background:repeating-linear-gradient(90deg,rgba(255,255,255,.2) 0 1px,transparent 1px 6px),
+             repeating-linear-gradient(0deg,rgba(255,255,255,.2) 0 1px,transparent 1px 6px)}
+.railG.l{border-right:0;border-radius:3px 0 0 3px}
+.railG.r{border-left:0;border-radius:0 3px 3px 0}
+.railField{position:relative;flex:1;display:flex;align-items:center;justify-content:space-between;
+  padding:0 clamp(6px,1.4vw,18px);min-width:0}
+.railField::before{content:"";position:absolute;left:6%;right:6%;top:50%;height:2px;
+  background:linear-gradient(90deg,var(--gold),rgba(255,255,255,.14));opacity:.5}
+.railField::after{content:"";position:absolute;left:50%;top:8%;bottom:8%;width:1px;
+  background:rgba(255,255,255,.28)}
+.railDot{position:relative;display:flex;flex-direction:column;align-items:center;gap:.3em;
+  font-family:var(--led);font-weight:800;font-size:clamp(8px,1vw,13px);color:rgba(255,255,255,.4)}
+.railDot i{width:clamp(7px,.9vw,11px);height:clamp(7px,.9vw,11px);border-radius:50%;
+  background:rgba(255,255,255,.22);box-shadow:inset 0 0 0 1px rgba(0,0,0,.4)}
+.railDot.done{color:var(--lime)}
+.railDot.done i{background:var(--lime);box-shadow:0 0 10px rgba(200,255,46,.8)}
+.railDot.next{color:var(--gold);font-size:clamp(11px,1.5vw,19px)}
+.railDot.next i{width:clamp(14px,1.8vw,24px);height:clamp(14px,1.8vw,24px);border-radius:4px;
+  transform:rotate(45deg);background:linear-gradient(135deg,var(--goldPale),var(--gold2));
+  box-shadow:0 0 18px rgba(255,207,61,.9)}
 
 /* Выбор амплуа — карточки как футбольные майки */
-.posGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;width:100%}
+.posGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(8px,1.1vw,14px);width:100%}
 .pos{
-  position:relative;text-align:left;padding:14px 14px 12px;border-radius:16px;
-  background:linear-gradient(180deg,rgba(20,34,48,.95),rgba(8,16,24,.95));
-  border:1px solid var(--edge2);transition:transform .12s,border-color .12s,box-shadow .12s;
-  overflow:hidden;
+  --c:16px;text-align:left;padding:clamp(10px,1.2vw,16px);
+  transition:transform .12s,filter .12s;
 }
-.pos::after{ /* полоски майки */
-  content:"";position:absolute;inset:0;opacity:.10;pointer-events:none;
-  background:repeating-linear-gradient(90deg,#fff 0 6px,transparent 6px 16px)}
-.pos:hover{transform:translateY(-3px)}
-.pos.on{border-color:var(--lime);box-shadow:0 0 0 2px rgba(200,255,46,.35),0 0 34px rgba(200,255,46,.22)}
-.pos .num{font-family:var(--led);font-weight:900;font-size:2.1em;line-height:1;color:var(--lime)}
-.pos .ttl{font-family:var(--led);font-weight:800;font-size:.92em;margin:.35em 0 .2em;letter-spacing:.04em}
-.pos .perk{font-size:.82em;color:var(--ink2);font-weight:700;line-height:1.35}
-.pos .cost{font-size:.76em;color:var(--red);font-weight:800;margin-top:.35em}
+/* Водяной знак разметки: круг и линия — карточка читается как кусок поля. */
+.pos::after{background:
+  radial-gradient(circle at 76% 40%, transparent 27px, rgba(255,255,255,.05) 28px, transparent 29px),
+  linear-gradient(180deg, transparent calc(52% - 1px), rgba(255,255,255,.035) 52%, transparent calc(52% + 1px)),
+  var(--glass)}
+.pos.on::after{background:
+  radial-gradient(circle at 76% 40%, transparent 27px, rgba(255,207,61,.10) 28px, transparent 29px),
+  linear-gradient(180deg, transparent calc(52% - 1px), rgba(255,207,61,.08) 52%, transparent calc(52% + 1px)),
+  var(--glassLit)}
+.pos:hover{transform:translateY(-3px);filter:brightness(1.12)}
+.pos.on{transform:translateY(-3px);filter:drop-shadow(0 0 26px rgba(255,207,61,.35))}
+.pos .head{display:flex;align-items:flex-start;justify-content:space-between;gap:.4em}
+.pos .num{font-family:var(--led);font-weight:900;font-size:clamp(26px,3vw,44px);line-height:.9;
+  background:linear-gradient(180deg,var(--goldPale),var(--gold) 45%,#a4750a);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 2px 0 rgba(0,0,0,.5))}
+.pos .posIco{flex:none;font-size:clamp(17px,2vw,28px);line-height:1;opacity:.95;
+  filter:drop-shadow(0 0 12px rgba(255,207,61,.4))}
+.pos .posIco img{width:clamp(22px,2.4vw,34px);height:clamp(22px,2.4vw,34px);object-fit:contain}
+.pos .ttl{font-family:var(--led);font-weight:800;font-size:clamp(11px,1.05vw,15px);
+  letter-spacing:.05em;margin:.5em 0 .45em;padding-bottom:.45em;
+  border-bottom:1px solid var(--edgeGold)}
+.pos .perk{font-size:clamp(10px,.82vw,12.5px);color:var(--ink2);font-weight:700;line-height:1.45}
+.pos .cost{font-size:clamp(9.5px,.78vw,12px);color:#ff8a80;font-weight:800;margin-top:.4em}
 /* Фигура игрока на карточке амплуа: подставляется из ASSETS.pos, без неё карточка
    выглядит как раньше. Текст ужимается, чтобы не заезжать под фигуру. */
 .pos .posArt{position:absolute;right:-8%;bottom:0;height:110%;width:auto;
@@ -186,9 +268,19 @@ html.has-logo .logoText{display:none}
 .pos.art .ttl{font-size:.86em}      /* «НАПАДАЮЩИЙ» — самое длинное слово, должно влезать */
 .pos.art:hover .posArt,.pos.on .posArt{opacity:1;transform:scale(1.04)}
 .pos.art::after{opacity:.06}
-.menuRow{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;align-items:center}
-.recBar{display:flex;gap:18px;flex-wrap:wrap;justify-content:center;font-size:.88em;color:var(--ink2)}
-.recBar b{color:var(--gold);font-family:var(--led)}
+.menuRow{display:flex;gap:clamp(8px,1.1vw,14px);flex-wrap:wrap;justify-content:center;align-items:stretch}
+/* Итоговая полоса рекордов: одна скошенная панель с четырьмя ячейками. */
+.recBar{--c:16px;width:100%;display:flex;align-items:center;justify-content:space-around;
+  flex-wrap:wrap;gap:.4em clamp(10px,2vw,28px);padding:.7em clamp(12px,2vw,26px)}
+.recCell{display:flex;align-items:center;gap:.6em;min-width:0}
+.recCell + .recCell{padding-left:clamp(10px,2vw,28px);border-left:1px solid rgba(255,207,61,.18)}
+.recCell .ri{font-size:clamp(15px,1.7vw,24px);line-height:1;flex:none;
+  filter:drop-shadow(0 0 10px rgba(255,207,61,.35))}
+.recCell .rt{display:flex;flex-direction:column;line-height:1.15;min-width:0}
+.recCell .rk{font-size:.62em;letter-spacing:.14em;color:var(--ink3);font-weight:800;white-space:nowrap}
+.recCell .rv{font-family:var(--led);font-weight:900;font-size:clamp(11px,1.1vw,16px);color:var(--gold);
+  white-space:nowrap}
+.recCell .rv small{color:var(--ink3);font-size:.7em}
 
 /* ===========================================================================
    ЭКРАН МАТЧА
@@ -197,10 +289,10 @@ html.has-logo .logoText{display:none}
 /* --- Табло --- */
 #board{
   display:flex;align-items:center;gap:clamp(6px,1.2vw,18px);
-  padding:.55em clamp(8px,1.6vw,20px);
-  background:linear-gradient(180deg,rgba(3,8,13,.96),rgba(6,14,22,.86));
-  border-bottom:1px solid var(--edge);
-  box-shadow:0 6px 24px rgba(0,0,0,.6);
+  padding:.5em clamp(8px,1.6vw,20px);
+  background:linear-gradient(180deg,rgba(10,18,30,.97),rgba(4,9,16,.94));
+  border-bottom:1px solid var(--edgeGold);
+  box-shadow:0 6px 24px rgba(0,0,0,.7), inset 0 -6px 18px rgba(255,207,61,.05);
   flex-wrap:nowrap;overflow:hidden;
 }
 .bCell{display:flex;flex-direction:column;line-height:1.1;white-space:nowrap}
@@ -208,12 +300,21 @@ html.has-logo .logoText{display:none}
 .bCell .v{font-family:var(--led);font-weight:800;font-size:1.05em}
 .bCell .v.money{color:var(--gold)}
 .bCell .v.safe{color:var(--lime)}
-#board .sep{width:1px;align-self:stretch;background:var(--edge2)}
+/* Разделители наклонные, как секции стадионного табло. */
+#board .sep{width:2px;height:2.1em;flex:none;transform:skewX(-18deg);
+  background:linear-gradient(180deg,transparent,var(--edgeGold),transparent)}
 #board .grow{flex:1}
-#boardTitle{font-family:var(--led);font-weight:900;font-size:.78em;letter-spacing:.16em;
-  color:var(--limeDim);white-space:nowrap}
+#boardTitle{--c:9px;font-family:var(--led);font-weight:900;font-size:.72em;letter-spacing:.14em;
+  color:var(--gold);white-space:nowrap;padding:.5em .9em;flex:none}
+.bCell .v{color:var(--ink)}
+/* Круглая кнопка в табло: звук и меню матча. */
+.bRound{flex:none;width:clamp(28px,2.6vw,36px);height:clamp(28px,2.6vw,36px);border-radius:50%;
+  display:grid;place-items:center;font-size:.95em;color:var(--gold);
+  background:linear-gradient(180deg,rgba(28,44,68,.9),rgba(8,15,26,.95));
+  border:1px solid var(--edgeGold);transition:filter .12s,transform .12s}
+.bRound:hover{filter:brightness(1.3);transform:scale(1.06)}
 #cards{display:flex;gap:4px}
-.card2{width:13px;height:18px;border-radius:2px;background:#22303a;border:1px solid rgba(255,255,255,.12)}
+.card2{width:12px;height:17px;border-radius:2px;background:#1b2736;border:1px solid rgba(255,255,255,.14)}
 .card2.y{background:var(--yellow);box-shadow:0 0 12px rgba(255,214,10,.6)}
 .card2.r{background:var(--red);box-shadow:0 0 12px rgba(255,59,48,.6)}
 
@@ -221,13 +322,14 @@ html.has-logo .logoText{display:none}
 #clock{position:relative;width:clamp(46px,4.6vw,62px);height:clamp(46px,4.6vw,62px);flex:none}
 #clock svg{position:absolute;inset:0;transform:rotate(-90deg)}
 #clock .ringBg{fill:none;stroke:rgba(255,255,255,.10);stroke-width:5}
-#clock .ringFg{fill:none;stroke:var(--lime);stroke-width:5;stroke-linecap:round;
+#clock .ringFg{fill:none;stroke:var(--gold);stroke-width:5;stroke-linecap:round;
   transition:stroke-dashoffset .25s linear, stroke .3s}
 #clock.warn .ringFg{stroke:var(--yellow)}
 #clock.crit .ringFg{stroke:var(--red)}
 #clock.crit{animation:pulse .5s ease-in-out infinite}
 #clockTxt{position:absolute;inset:0;display:grid;place-items:center;
-  font-family:var(--led);font-weight:800;font-size:.82em}
+  font-family:var(--led);font-weight:800;font-size:.82em;color:var(--gold)}
+#clock.warn #clockTxt{color:var(--yellow)} #clock.crit #clockTxt{color:var(--red)}
 @keyframes pulse{50%{transform:scale(1.09)}}
 
 /* --- Арена: поле + игровая зона --- */
@@ -241,13 +343,13 @@ html.has-logo .logoText{display:none}
              repeating-linear-gradient(0deg,rgba(255,255,255,.22) 0 1px,transparent 1px 7px);
   display:grid;place-items:center;box-shadow:0 0 30px rgba(255,207,61,.25) inset}
 .goalBox .gl{font-family:var(--led);font-weight:900;font-size:.8em;color:var(--gold);
-  text-shadow:0 0 16px rgba(255,207,61,.7);letter-spacing:.06em}
+  text-shadow:0 0 16px rgba(255,207,61,.7),0 2px 0 rgba(0,0,0,.6);letter-spacing:.06em}
 .field{
   position:relative;flex:1;min-height:0;border-radius:0 0 10px 10px;overflow:hidden;
   background:
     repeating-linear-gradient(0deg,var(--grass) 0 6.666%,var(--grass2) 6.666% 13.333%);
-  box-shadow:inset 0 0 60px rgba(0,0,0,.55), 0 12px 40px rgba(0,0,0,.5);
-  border:1px solid rgba(255,255,255,.14);border-top:0;
+  box-shadow:inset 0 0 60px rgba(0,0,0,.6), 0 12px 40px rgba(0,0,0,.55);
+  border:1px solid var(--edgeGold);border-top:0;
 }
 .field .marks{position:absolute;inset:0;pointer-events:none}
 /* штрафные площади сверху и снизу */
@@ -262,23 +364,32 @@ html.has-logo .logoText{display:none}
 .zones{list-style:none;position:absolute;inset:0;display:flex;flex-direction:column-reverse;
   padding:2px;gap:1px}
 .zone{
-  flex:1;display:flex;align-items:center;gap:8px;padding:0 8px;border-radius:5px;
+  flex:1;display:flex;align-items:center;gap:8px;padding:0 8px;border-radius:7px;
   font-family:var(--led);font-weight:800;font-size:clamp(9px,.86vw,12px);
-  background:rgba(4,14,8,.30);border:1px solid transparent;color:rgba(255,255,255,.66);
+  background:rgba(4,14,8,.28);border:1px solid transparent;color:rgba(255,255,255,.62);
   transition:background .25s,color .25s,border-color .25s,box-shadow .25s;
 }
-.zone .n{width:1.6em;text-align:center;color:rgba(255,255,255,.45);flex:none}
+/* Номер зоны — в кружке, как на разметке поля. */
+.zone .n{width:1.9em;height:1.9em;flex:none;display:grid;place-items:center;border-radius:50%;
+  color:rgba(255,255,255,.55);background:rgba(0,0,0,.28);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.14);font-size:.92em}
 .zone .s{margin-left:auto;letter-spacing:.02em}
 .zone .sh{display:none}
-.zone.safe{border-color:rgba(255,207,61,.55);background:rgba(60,44,4,.4);color:var(--gold)}
-.zone.safe .n{color:var(--gold)}
-.zone.done{background:rgba(200,255,46,.16);color:var(--lime);border-color:rgba(200,255,46,.35)}
-.zone.locked{background:rgba(255,207,61,.20);color:var(--gold);border-color:var(--gold);
-  box-shadow:0 0 18px rgba(255,207,61,.35)}
-.zone.cur{background:rgba(255,255,255,.94);color:#08150a;border-color:#fff;
-  box-shadow:0 0 26px rgba(255,255,255,.5);animation:curPulse 1.6s ease-in-out infinite}
-.zone.cur .n{color:#0b3d17}
-@keyframes curPulse{50%{box-shadow:0 0 12px rgba(255,255,255,.28)}}
+.zone.safe{border-color:var(--edgeGold);background:rgba(70,52,6,.42);color:var(--gold)}
+.zone.safe .n{color:var(--gold);box-shadow:inset 0 0 0 1px var(--edgeGold)}
+.zone.done{background:rgba(200,255,46,.14);color:var(--lime);border-color:rgba(200,255,46,.3)}
+.zone.done .n{color:var(--lime);box-shadow:inset 0 0 0 1px rgba(200,255,46,.4)}
+.zone.locked{background:linear-gradient(90deg,rgba(255,207,61,.26),rgba(255,207,61,.12));
+  color:var(--gold);border-color:var(--gold);box-shadow:0 0 18px rgba(255,207,61,.3)}
+.zone.locked .n{color:var(--goldPale);background:rgba(255,207,61,.2);
+  box-shadow:inset 0 0 0 1px var(--gold)}
+/* Текущая зона — золотая капсула с подсветкой, на ней стоит мяч. */
+.zone.cur{background:linear-gradient(90deg,rgba(255,207,61,.30),rgba(255,207,61,.14));
+  color:var(--goldPale);border-color:var(--goldPale);
+  box-shadow:0 0 26px rgba(255,207,61,.5);animation:curPulse 1.7s ease-in-out infinite}
+.zone.cur .n{color:#2a1c02;background:linear-gradient(180deg,var(--goldPale),var(--gold));
+  box-shadow:0 0 10px rgba(255,207,61,.8)}
+@keyframes curPulse{50%{box-shadow:0 0 12px rgba(255,207,61,.25)}}
 /* мяч */
 #ball{position:absolute;--p:3.33%;left:calc(50% - 9px);bottom:calc(var(--p) - 9px);
   width:18px;height:18px;border-radius:50%;
@@ -297,35 +408,40 @@ html.has-logo .logoText{display:none}
 /* Выбор фланга */
 #flanks{flex:1;display:flex;flex-direction:column;justify-content:center;
   gap:clamp(6px,1.2vh,14px);min-height:0}
-#flanks .fTitle{text-align:center;font-family:var(--led);font-weight:800;
-  font-size:clamp(12px,1.5vw,19px);letter-spacing:.1em;color:var(--ink2)}
-#flanks .fTitle b{color:var(--lime)}
-.flankRow{flex:0 1 420px;display:grid;grid-template-columns:repeat(3,1fr);
+#flanks .fTitle{text-align:center;font-family:var(--led);font-weight:900;
+  font-size:clamp(14px,1.9vw,26px);letter-spacing:.08em;color:var(--ink);
+  text-shadow:0 2px 0 rgba(0,0,0,.6)}
+#flanks .fStep{text-align:center;font-family:var(--led);font-weight:800;
+  font-size:clamp(11px,1.3vw,17px);letter-spacing:.1em;color:var(--gold);
+  text-shadow:0 0 20px rgba(255,207,61,.45);margin-top:-.3em}
+.flankRow{flex:0 1 300px;display:grid;grid-template-columns:repeat(3,1fr);
   gap:clamp(6px,1vw,14px);min-height:0}
 .flank{
-  position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:.5em;border-radius:16px;padding:1em .8em;text-align:center;overflow:hidden;
-  background:linear-gradient(180deg,rgba(16,44,26,.92),rgba(6,18,12,.95));
-  border:1px solid var(--edge2);transition:transform .12s,border-color .12s,box-shadow .12s;
+  --c:16px;display:flex;flex-direction:column;align-items:center;
+  gap:.45em;padding:clamp(10px,1.2vh,16px) .8em 0;text-align:center;
+  transition:transform .12s,filter .12s;min-width:0;
 }
-.flank::before{ /* стрелка направления атаки */
-  content:"";position:absolute;left:50%;bottom:-30%;width:70%;aspect-ratio:1;transform:translateX(-50%);
-  background:radial-gradient(circle,rgba(200,255,46,.20),transparent 70%)}
-.flank:hover{transform:translateY(-4px);border-color:var(--lime);
-  box-shadow:0 0 0 2px rgba(200,255,46,.3),0 14px 34px rgba(0,0,0,.5)}
-.flank .side{font-size:.68em;letter-spacing:.2em;color:var(--ink3);font-weight:800}
-.flank .ico{font-size:clamp(22px,3.4vw,42px);line-height:1}
-.flank .ico img{width:clamp(28px,4.4vw,54px);height:clamp(28px,4.4vw,54px);object-fit:contain}
+.flank:hover{transform:translateY(-4px);filter:brightness(1.16)}
+/* Надпись фланга с шевронами: «>>> ЛЕВЫЙ ФЛАНГ <<<». */
+.flank .side{display:flex;align-items:center;justify-content:center;gap:.5em;
+  font-size:.66em;letter-spacing:.18em;color:var(--gold);font-weight:800;width:100%}
+.flank .side::before,.flank .side::after{content:"»»";opacity:.55;letter-spacing:-.1em}
+.flank .side::after{content:"««"}
+.flank .ico{font-size:clamp(22px,3.4vw,44px);line-height:1;margin-top:.15em;
+  filter:drop-shadow(0 0 16px rgba(255,207,61,.35))}
+.flank .ico img{width:clamp(28px,4.4vw,56px);height:clamp(28px,4.4vw,56px);object-fit:contain}
 .qmeta .cat img{width:1.15em;height:1.15em;vertical-align:-.2em;margin-right:.15em}
-.flank .nm{font-family:var(--led);font-weight:800;font-size:clamp(11px,1.25vw,16px);letter-spacing:.05em}
-.flank .ds{font-size:.78em;color:var(--ink2);font-weight:700}
-.flank .cnt{font-size:.7em;color:var(--ink3);font-weight:800;letter-spacing:.08em}
-/* Фланг «ВАША ПОЗИЦИЯ»: вопросы про игроков вашего амплуа — отмечен золотом. */
-.flank.own{border-color:rgba(255,207,61,.45);
-  background:linear-gradient(180deg,rgba(48,38,10,.92),rgba(18,14,4,.95))}
-.flank.own::before{background:radial-gradient(circle,rgba(255,207,61,.22),transparent 70%)}
+.flank .nm{font-family:var(--led);font-weight:900;font-size:clamp(12px,1.45vw,20px);
+  letter-spacing:.04em}
+.flank .ds{font-size:.76em;color:var(--ink2);font-weight:700}
+.flank .cnt{font-size:.68em;color:var(--ink3);font-weight:800;letter-spacing:.08em;
+  width:100%;padding-top:.5em;border-top:1px solid var(--edgeGold)}
+/* Мини-схема поля: показывает, куда пойдёт атака при выборе этого фланга. */
+.fdia{width:100%;height:clamp(38px,7vh,74px);display:block;margin-top:auto;opacity:.9}
+/* Фланг «ВАША ПОЗИЦИЯ» — золотой, чтобы читался как особый. */
+.flank.own{--line:rgba(255,207,61,.6)}
+.flank.own::after{background:linear-gradient(160deg,rgba(58,45,10,.95),rgba(14,10,3,.97))}
 .flank.own .nm{color:var(--gold)}
-.flank.own:hover{border-color:var(--gold);box-shadow:0 0 0 2px rgba(255,207,61,.35),0 14px 34px rgba(0,0,0,.5)}
 
 /* Вопрос */
 #qbox{flex:1;display:flex;flex-direction:column;gap:clamp(6px,1.1vh,14px);min-height:0}
@@ -335,8 +451,8 @@ html.has-logo .logoText{display:none}
 .qmeta .dots{margin-left:auto;letter-spacing:.2em;color:var(--gold)}
 #qText{
   flex:none;padding:clamp(12px,1.9vh,24px) clamp(14px,2vw,28px);border-radius:var(--r);
-  background:linear-gradient(180deg,rgba(12,22,32,.95),rgba(6,13,20,.95));
-  border:1px solid var(--edge);border-left:4px solid var(--lime);
+  background:linear-gradient(180deg,rgba(14,25,40,.95),rgba(6,13,22,.96));
+  border:1px solid var(--edgeGold);border-left:4px solid var(--gold);
   font-size:clamp(14px,1.75vw,23px);font-weight:800;line-height:1.35;
   box-shadow:0 10px 34px rgba(0,0,0,.5), inset 0 0 40px rgba(200,255,46,.04);
   display:flex;align-items:center;min-height:3.4em;
@@ -344,29 +460,29 @@ html.has-logo .logoText{display:none}
 .answers{flex:0 0 auto;margin-top:auto;display:grid;grid-template-columns:1fr 1fr;align-content:end;
   grid-auto-rows:minmax(3.2em,5.6em);gap:clamp(6px,1vw,12px);min-height:0}
 .ans{
-  position:relative;display:flex;align-items:center;gap:.7em;padding:.6em .9em;
-  border-radius:12px;text-align:left;overflow:hidden;
-  background:linear-gradient(180deg,rgba(17,30,42,.95),rgba(8,16,24,.95));
-  border:1px solid var(--edge2);
-  transition:transform .1s,border-color .15s,background .2s,box-shadow .2s,opacity .2s;
+  --c:12px;display:flex;align-items:center;gap:.7em;padding:.6em .9em;text-align:left;
+  transition:transform .1s,filter .2s,opacity .2s;
 }
 .ans .ltr{
-  flex:none;width:2.1em;height:2.1em;display:grid;place-items:center;border-radius:8px;
-  font-family:var(--led);font-weight:900;font-size:.95em;color:var(--lime);
-  background:rgba(200,255,46,.10);border:1px solid rgba(200,255,46,.35);
+  flex:none;width:2.1em;height:2.1em;display:grid;place-items:center;border-radius:50%;
+  font-family:var(--led);font-weight:900;font-size:.95em;color:var(--gold);
+  background:rgba(255,207,61,.10);border:1px solid var(--edgeGold);
 }
 .ans .txt{font-weight:800;font-size:clamp(12px,1.35vw,18px);line-height:1.25}
-.ans:hover:not(:disabled):not(.off){transform:translateY(-2px);border-color:var(--lime);
-  box-shadow:0 0 0 2px rgba(200,255,46,.25)}
+.ans:hover:not(:disabled):not(.off){transform:translateY(-2px);--line:var(--gold);
+  filter:brightness(1.15) drop-shadow(0 0 14px rgba(255,207,61,.3))}
 .ans.off{opacity:.22;filter:grayscale(1)}
-.ans.picked{border-color:var(--gold);background:linear-gradient(180deg,rgba(70,54,10,.95),rgba(38,28,4,.95));
-  box-shadow:0 0 0 2px rgba(255,207,61,.5),0 0 30px rgba(255,207,61,.28)}
-.ans.picked .ltr{color:var(--gold);border-color:var(--gold);background:rgba(255,207,61,.14)}
-.ans.right{border-color:var(--lime);background:linear-gradient(180deg,rgba(38,84,16,.96),rgba(18,44,8,.96));
-  box-shadow:0 0 0 2px var(--lime),0 0 40px rgba(200,255,46,.45)}
-.ans.wrong{border-color:var(--red);background:linear-gradient(180deg,rgba(92,20,14,.96),rgba(46,8,6,.96));
-  box-shadow:0 0 0 2px var(--red);animation:shake .4s}
-.ans.tip{border-color:var(--gold);box-shadow:0 0 0 1px rgba(255,207,61,.5)}
+/* Состояния меняют цвет рамки и заливку — оба слоя обрезаны по одному контуру. */
+.ans.picked{--line:var(--goldPale);filter:drop-shadow(0 0 22px rgba(255,207,61,.35))}
+.ans.picked::after{background:linear-gradient(160deg,rgba(74,57,11,.96),rgba(38,28,4,.97))}
+.ans.picked .ltr{color:var(--goldPale);border-color:var(--gold);background:rgba(255,207,61,.18)}
+.ans.right{--line:var(--lime);filter:drop-shadow(0 0 30px rgba(200,255,46,.45))}
+.ans.right::after{background:linear-gradient(160deg,rgba(42,90,18,.96),rgba(18,44,8,.97))}
+.ans.right .ltr{color:var(--lime);border-color:var(--lime);background:rgba(200,255,46,.16)}
+.ans.wrong{--line:#ff6b60;animation:shake .4s;filter:drop-shadow(0 0 22px rgba(255,59,48,.4))}
+.ans.wrong::after{background:linear-gradient(160deg,rgba(96,22,15,.96),rgba(46,8,6,.97))}
+.ans.wrong .ltr{color:#ff9d95;border-color:#ff6b60;background:rgba(255,59,48,.16)}
+.ans.tip{--line:var(--gold)}
 @keyframes shake{10%,90%{transform:translateX(-3px)}30%,70%{transform:translateX(5px)}50%{transform:translateX(-6px)}}
 /* полоска «голоса трибун» */
 .ans .bar{position:absolute;left:0;bottom:0;height:3px;background:var(--lime);width:0;
@@ -377,9 +493,7 @@ html.has-logo .logoText{display:none}
 
 /* Лента матча — хроника событий между вопросом и ответами */
 #feed{flex:1;min-height:0;display:flex;flex-direction:column;gap:4px;overflow:hidden;
-  padding:.5em .8em;border-radius:var(--r);
-  background:linear-gradient(180deg,rgba(255,255,255,.025),rgba(255,255,255,.008));
-  border:1px solid rgba(255,255,255,.05)}
+  padding:.4em .3em}
 #feed .fh{font-family:var(--led);font-weight:800;font-size:.62em;letter-spacing:.2em;
   color:var(--ink3);flex:none;margin-bottom:.2em}
 #feed .fl{display:flex;gap:.7em;align-items:baseline;font-size:.82em;font-weight:700;
@@ -396,41 +510,51 @@ html.has-logo .logoText{display:none}
 /* Панель инструментов */
 #tools{flex:none;display:flex;align-items:stretch;gap:clamp(5px,.8vw,10px);flex-wrap:wrap}
 .tool{
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.15em;
-  min-width:5.4em;padding:.5em .7em;border-radius:11px;
-  background:linear-gradient(180deg,rgba(18,32,44,.95),rgba(8,16,24,.95));
-  border:1px solid var(--edge2);transition:border-color .15s,transform .1s,opacity .2s;
+  --c:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.1em;
+  min-width:5.2em;padding:.45em .6em;
+  transition:transform .1s,filter .15s,opacity .2s;
 }
-.tool .tn{font-family:var(--led);font-weight:800;font-size:.76em;letter-spacing:.04em;white-space:nowrap}
-.tool .ti{font-style:normal}
-.tool .ti img{width:1.3em;height:1.3em;vertical-align:-.25em}
-.tool .td{font-size:.66em;color:var(--ink3);font-weight:800;letter-spacing:.06em;white-space:nowrap}
-.tool:hover:not(:disabled){border-color:var(--lime);transform:translateY(-2px)}
+.tool .ti{font-style:normal;font-size:1.5em;line-height:1.05;
+  filter:drop-shadow(0 0 10px rgba(255,207,61,.3))}
+.tool .ti img{width:1.35em;height:1.35em;display:block}
+.tool .tn{font-family:var(--led);font-weight:800;font-size:.7em;letter-spacing:.04em;
+  white-space:nowrap;color:var(--goldPale)}
+.tool .td{font-size:.62em;color:var(--ink3);font-weight:800;letter-spacing:.06em;white-space:nowrap}
+.tool:hover:not(:disabled){transform:translateY(-2px);filter:brightness(1.25)}
 .tool:disabled{opacity:.3}
-.tool.used{opacity:.28;text-decoration:line-through}
-.tool.var{border-color:rgba(120,200,255,.45)}
-.tool.var .tn{color:#8fd4ff}
-.tool.atk{border-color:rgba(255,120,60,.5)}
-.tool.atk .tn{color:#ff9a5c}
-.tool.atk.on{background:linear-gradient(180deg,#ff7a3c,#c8380a);border-color:#ffb38a}
+.tool.used{opacity:.28}
+.tool.used .tn{text-decoration:line-through}
+.tool.var{--line:rgba(120,200,255,.6)}
+.tool.var .tn{color:#a5dcff}
+.tool.var::after{background:linear-gradient(160deg,rgba(14,38,64,.95),rgba(5,14,26,.97))}
+.tool.atk{--line:rgba(255,130,70,.65)}
+.tool.atk .tn{color:#ffb089}
+.tool.atk::after{background:linear-gradient(160deg,rgba(64,24,10,.95),rgba(24,8,4,.97))}
+.tool.atk.on{--line:#ffd0b0}
+.tool.atk.on::after{background:linear-gradient(180deg,#ff8a4c,#c8380a)}
 .tool.atk.on .tn,.tool.atk.on .td{color:#fff}
-.tool.cash{border-color:rgba(255,207,61,.45)}
+/* «Удержание» забирает деньги и заканчивает матч — действие необратимое,
+   поэтому кнопка широкая и с запасом по высоте, а не как остальные плитки. */
+.tool.cash{min-width:10em;min-height:3em;flex-direction:row;gap:.6em;padding:.5em 1.1em}
+.tool.cash .ti{font-size:1.25em}
 .tool.cash .tn{color:var(--gold)}
-.subsBox{display:flex;flex-direction:column;align-items:center;justify-content:center;
-  padding:.5em .8em;border-radius:11px;border:1px dashed var(--edge2);min-width:5em}
-.subsBox .k{font-size:.62em;letter-spacing:.12em;color:var(--ink3);font-weight:800}
-.subsBox .v{font-family:var(--led);font-weight:900;font-size:1.15em;color:var(--lime)}
-.subsBox.open{border-color:var(--lime);border-style:solid;background:rgba(200,255,46,.07)}
-#tools .spacer{flex:1}
+/* Счётчик замен — пунктирная рамка, чтобы читался как счётчик, а не кнопка. */
+.subsBox{--c:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:.45em .85em;min-width:5em;--line:rgba(255,255,255,.18)}
+.subsBox .k{font-size:.6em;letter-spacing:.12em;color:var(--ink3);font-weight:800}
+.subsBox .v{font-family:var(--led);font-weight:900;font-size:1.2em;color:var(--gold)}
+.subsBox.open{--line:var(--edgeGoldLit)}
+.subsBox.open .v{color:var(--goldPale)}
+#toolsRow2{flex:none;display:flex;gap:clamp(5px,.8vw,10px);flex-wrap:wrap}
 
 /* Комментатор */
 #commentary{
   flex:none;display:flex;align-items:center;gap:.8em;
   padding:.6em clamp(10px,1.8vw,22px);
-  background:linear-gradient(180deg,rgba(3,8,13,.9),rgba(6,14,22,.98));
-  border-top:1px solid var(--edge2);font-size:.9em;font-weight:700;min-height:2.9em;
+  background:linear-gradient(180deg,rgba(8,15,26,.95),rgba(3,7,13,.99));
+  border-top:1px solid var(--edgeGold);font-size:.9em;font-weight:700;min-height:2.9em;
 }
-#commentary .min{font-family:var(--led);font-weight:900;color:var(--lime);flex:none;
+#commentary .min{font-family:var(--led);font-weight:900;color:var(--gold);flex:none;
   min-width:3.2em;text-align:right}
 #commentary .say{color:var(--ink);opacity:0;animation:sayIn .35s forwards}
 @keyframes sayIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
@@ -567,7 +691,6 @@ html.has-host #commentary .mic{display:none}
   #ball{width:12px;height:12px;left:calc(var(--p) - 6px)!important;bottom:calc(50% - 6px)!important}
   /* На узком экране ответы растягиваются на всю колонку — пустых полос не остаётся. */
   .answers{grid-auto-rows:minmax(2.9em,5em);align-content:space-evenly}
-  #tools .spacer{display:none}
   #tools{justify-content:center}
   #btnSound{width:28px;height:28px}
   #ball{left:calc(var(--p) - 9px)!important;bottom:calc(50% - 9px)!important;
@@ -644,8 +767,14 @@ html.has-host #commentary .mic{display:none}
       <div class="logoText">
         <div class="l1">КВИЗ-МАТЧ</div>
         <div class="l2">15 ШАГОВ К МИЛЛИОНУ</div>
-        <div class="l3">Ф<b>У</b>ТБОЛ</div>
+        <div class="l3"><span>Ф<b>У</b>ТБОЛ</span></div>
       </div>
+    </div>
+
+    <div class="rail cut" id="rail">
+      <span class="railG l"></span>
+      <div class="railField" id="railField"></div>
+      <span class="railG r"></span>
     </div>
 
     <div class="hint" style="text-align:center;max-width:44em">
@@ -660,12 +789,12 @@ html.has-host #commentary .mic{display:none}
     </div>
 
     <div class="menuRow">
-      <button class="btn prime" id="btnPlay">ВЫЙТИ НА ПОЛЕ</button>
-      <button class="btn" id="btnResume" hidden>ПРОДОЛЖИТЬ МАТЧ</button>
-      <button class="btn" id="btnRules">ПРАВИЛА МАТЧА</button>
+      <button class="btn prime" id="btnPlay"><span class="bi">⚽</span>ВЫЙТИ НА ПОЛЕ</button>
+      <button class="btn" id="btnResume" hidden><span class="bi">▶</span>ПРОДОЛЖИТЬ МАТЧ</button>
+      <button class="btn" id="btnRules"><span class="bi">📖</span>ПРАВИЛА МАТЧА</button>
     </div>
 
-    <div class="recBar" id="recBar"></div>
+    <div class="recBar cut" id="recBar"></div>
   </div>
 </section>
 
@@ -673,7 +802,7 @@ html.has-host #commentary .mic{display:none}
 <section id="scrGame" class="screen" hidden>
 
   <header id="board">
-    <div id="boardTitle">15 ШАГОВ · ФУТБОЛ</div>
+    <div id="boardTitle" class="cut">15 ШАГОВ · ФУТБОЛ</div>
     <div class="sep"></div>
     <div class="bCell"><span class="k">ШАГ</span><span class="v" id="bStep">01/15</span></div>
     <div class="bCell" id="bHalfCell"><span class="k">ОТРЕЗОК</span><span class="v" id="bHalf">1-Й ТАЙМ</span></div>
@@ -682,7 +811,8 @@ html.has-host #commentary .mic{display:none}
     <div class="bCell"><span class="k">ГАРАНТИЯ</span><span class="v safe" id="bSafe">0 ₽</span></div>
     <div class="grow"></div>
     <div class="bCell" id="bCardsCell"><span class="k">КАРТОЧКИ</span><span id="cards"></span></div>
-    <button id="btnSound" title="Звук">🔊</button>
+    <button id="btnSound" class="bRound" title="Звук">🔊</button>
+    <button id="btnGameMenu" class="bRound" title="Меню матча">☰</button>
     <div id="clock">
       <svg viewBox="0 0 44 44"><circle class="ringBg" cx="22" cy="22" r="19"></circle>
       <circle class="ringFg" id="ring" cx="22" cy="22" r="19"></circle></svg>
@@ -705,7 +835,8 @@ html.has-host #commentary .mic{display:none}
     <main id="play">
       <!-- выбор направления атаки -->
       <div id="flanks">
-        <div class="fTitle">КУДА РАЗВИВАЕМ АТАКУ? <b id="flankStep"></b></div>
+        <div class="fTitle">КУДА РАЗВИВАЕМ АТАКУ?</div>
+        <div class="fStep" id="flankStep"></div>
         <div class="flankRow" id="flankRow"></div>
       </div>
 
@@ -723,15 +854,16 @@ html.has-host #commentary .mic{display:none}
 
       <!-- инструменты -->
       <div id="tools">
-        <button class="tool" id="tOffside"><span class="tn"><i class="ti">⚑</i> ОФСАЙД</span><span class="td">50:50</span></button>
-        <button class="tool" id="tCoach"><span class="tn"><i class="ti">🧥</i> ТРЕНЕР</span><span class="td">СОВЕТ</span></button>
-        <button class="tool" id="tStands"><span class="tn"><i class="ti">📣</i> ТРИБУНЫ</span><span class="td">ОПРОС</span></button>
-        <div class="subsBox" id="subsBox"><span class="k">ЗАМЕНЫ</span><span class="v" id="subsLeft">3</span></div>
-        <button class="tool var" id="tVar"><span class="tn"><i class="ti">📺</i> VAR</span><span class="td" id="varLeft">1</span></button>
-        <span class="spacer"></span>
-        <button class="tool" id="tTime"><span class="tn"><i class="ti">⏱</i> +15″</span><span class="td" id="bankLbl">0″</span></button>
-        <button class="tool atk" id="tAttack"><span class="tn"><i class="ti">⚡</i> АТАКА</span><span class="td">+50% РИСК</span></button>
-        <button class="tool cash" id="tCash"><span class="tn"><i class="ti">🅿</i> УДЕРЖАНИЕ</span><span class="td">ЗАБРАТЬ</span></button>
+        <button class="tool cut" id="tOffside"><i class="ti">⚑</i><span class="tn">ОФСАЙД</span><span class="td">50:50</span></button>
+        <button class="tool cut" id="tCoach"><i class="ti">🧥</i><span class="tn">ТРЕНЕР</span><span class="td">СОВЕТ</span></button>
+        <button class="tool cut" id="tStands"><i class="ti">📣</i><span class="tn">ТРИБУНЫ</span><span class="td">ОПРОС</span></button>
+        <div class="subsBox cut" id="subsBox"><span class="k">ЗАМЕНЫ</span><span class="v" id="subsLeft">3</span></div>
+        <button class="tool var cut" id="tVar"><i class="ti">📺</i><span class="tn">VAR</span><span class="td" id="varLeft">1</span></button>
+        <button class="tool cut" id="tTime"><i class="ti">⏱</i><span class="tn">+15″</span><span class="td" id="bankLbl">0″</span></button>
+        <button class="tool atk cut" id="tAttack"><i class="ti">⚡</i><span class="tn">АТАКА</span><span class="td">+50% РИСК</span></button>
+      </div>
+      <div id="toolsRow2">
+        <button class="tool cash cut" id="tCash"><i class="ti">🛡</i><span class="tn">УДЕРЖАНИЕ</span><span class="td">ЗАБРАТЬ</span></button>
       </div>
     </main>
   </div>
@@ -1305,6 +1437,28 @@ function resumeMatch(raw){
   return true;
 }
 
+/* Мини-схема поля на карточке фланга: показывает, куда пойдёт атака.
+   0 — левый фланг, 1 — центр, 2 — правый. Чем выше шеврон, тем ярче. */
+function flankDiagram(side){
+  const line = 'stroke="rgba(255,255,255,.16)" fill="none"';
+  const chev = cx => [0,1,2].map(i =>
+    `<path d="M${cx-8} ${50-i*12} L${cx} ${42-i*12} L${cx+8} ${50-i*12}" fill="none"
+       stroke="var(--gold)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"
+       opacity="${(0.32+i*0.3).toFixed(2)}"/>`).join("");
+  const mark = side===1
+    ? `<circle cx="60" cy="35" r="13" fill="none" stroke="var(--gold)" stroke-width="2.6" opacity=".85"/>
+       <circle cx="60" cy="35" r="4.5" fill="var(--gold)"/>`
+    : chev(side===0 ? 26 : 94);
+  return `<svg class="fdia" viewBox="0 0 120 70" preserveAspectRatio="none" aria-hidden="true">
+    <rect x="1.5" y="1.5" width="117" height="67" rx="5" ${line}/>
+    <line x1="60" y1="1.5" x2="60" y2="68.5" ${line}/>
+    <circle cx="60" cy="35" r="12" ${line}/>
+    <rect x="1.5" y="19" width="15" height="32" ${line}/>
+    <rect x="103.5" y="19" width="15" height="32" ${line}/>
+    ${mark}
+  </svg>`;
+}
+
 /* --- Выбор фланга (категории) --- */
 function offerFlanks(){
   S.phase = "flank"; S.chosen = -1; S.hintsUsed = {}; S.subWindow = null; S.q = null;
@@ -1342,12 +1496,13 @@ function offerFlanks(){
                : i===S.freeFlank ? '<span class="cnt" style="color:var(--lime)">СВОБОДНАЯ ЗОНА · +15″</span>'
                : '<span class="cnt">ЗАЩИТА ГОТОВА</span>';
     const b = document.createElement("button");
-    b.className = "flank" + (isRole ? " own" : "");
+    b.className = "flank cut" + (isRole ? " own" : "");
     b.innerHTML = `<span class="side">${SIDES[i]}</span>
       <span class="ico">${icon(img, meta.icon)}</span>
       <span class="nm">${meta.short}</span>
       <span class="ds">${meta.name}</span>
-      ${tag}`;
+      ${tag}
+      ${flankDiagram(i)}`;
     b.onclick = ()=>{ SFX.kick(); chooseFlank(f, i); };
     row.appendChild(b);
   });
@@ -1951,26 +2106,73 @@ function flash({art, ttl, sub, buttons, noClose}){
 }
 function hideFlash(){ $("ovFlash").hidden = true; }
 
+/* Рельс прогресса в меню: пройденные зоны личного рекорда светятся, следующая
+   подсвечена ромбом. Если матчей ещё не было — подсвечена первая. */
+function renderRail(){
+  const done = Math.max(0, Math.min(15, records.bestStep||0));
+  const next = done >= 15 ? 0 : done + 1;
+  $("railField").innerHTML = Array.from({length:15}, (_,i)=>{
+    const n = i+1;
+    const cls = n <= done ? "done" : n === next ? "next" : "";
+    return `<span class="railDot ${cls}"><b>${n}</b><i></i></span>`;
+  }).join("");
+}
+/* Меню матча (кнопка ☰ в табло). Матч сохраняется, поэтому «В меню» безопасно:
+   игра вернётся к тому же шагу по кнопке «Продолжить матч». */
+function openGameMenu(){
+  if(!$("ovFlash").hidden || !$("ovPen").hidden || !$("ovResult").hidden || !$("ovRules").hidden) return;
+  flash({
+    art:`<div style="font-size:clamp(28px,4.6vw,52px)">📋</div>`,
+    ttl:"МЕНЮ МАТЧА",
+    sub:`Шаг <b style="color:var(--gold)">${Math.min(15,S?S.step:1)}</b> из 15. Прогресс сохранён —
+         из главного меню можно вернуться и продолжить с этого же места.`,
+    buttons:[
+      {t:"ПРОДОЛЖИТЬ МАТЧ", cls:"prime", fn:()=>hideFlash()},
+      {t:"ПРАВИЛА", cls:"", fn:()=>{ hideFlash(); $("rulesBody").innerHTML = RULES_HTML; $("ovRules").hidden = false; }},
+      {t: soundOn ? "🔇 ЗВУК ВЫКЛ" : "🔊 ЗВУК ВКЛ", cls:"", fn:()=>{ toggleSound(); hideFlash(); openGameMenu(); }},
+      {t:"ВЫЙТИ В МЕНЮ", cls:"", fn:()=>{ hideFlash(); toMenu(); }},
+    ]
+  });
+}
+function toggleSound(){
+  soundOn = !soundOn;
+  $("btnSound").textContent = soundOn ? "🔊" : "🔇";
+  muteAll(!soundOn);
+  try{ Storage.set("f15_sound", soundOn?"1":"0"); }catch(e){}
+}
+function toMenu(){
+  saveMatch();
+  $("ovResult").hidden = true; $("scrGame").hidden = true; $("scrMenu").hidden = false;
+  renderMenu();
+}
+
 function renderMenu(){
   const grid = $("posGrid"); grid.innerHTML = "";
   POS_ORDER.forEach(k=>{
     const p = POSITIONS[k];
     const b = document.createElement("button");
     const art = ASSETS.pos[k];
-    b.className = "pos" + (k===menuPos ? " on" : "") + (art ? " art" : "");
+    /* Иконка амплуа — та же, что у одноимённого фланга «ваша позиция»: одно значение,
+       один знак. Если положили фигуру игрока (ASSETS.pos), она заменяет иконку. */
+    const ico = icon(ASSETS.role[k], QDB.roles[k].icon);
+    b.className = "pos cut" + (k===menuPos ? " on lit" : "") + (art ? " art" : "");
     b.innerHTML = (art ? `<img class="posArt" src="${art}" alt="">` : "") +
-      `<div class="num">${p.num}</div>
+      `<div class="head"><div class="num">${p.num}</div>
+        ${art ? "" : `<div class="posIco">${ico}</div>`}</div>
       <div class="ttl">${p.name}</div>
       <div class="perk">${p.perk}</div>
       ${p.cost ? `<div class="cost">${p.cost}</div>` : ""}`;
     b.onclick = ()=>{ menuPos = k; SFX.click(); renderMenu(); };
     grid.appendChild(b);
   });
+  const cell = (ico,k,v)=>`<div class="recCell"><span class="ri">${ico}</span>
+    <span class="rt"><span class="rk">${k}</span><span class="rv">${v}</span></span></div>`;
   $("recBar").innerHTML =
-    `Рекорд: <b>${fmtMoney(records.best)}</b>` +
-    ` · Матчей: <b>${records.matches}</b>` +
-    ` · Миллионов: <b>${records.wins}</b>` +
-    ` · Дальняя зона: <b>${records.bestStep}</b>/15`;
+    cell("🏆","РЕКОРД", fmtMoney(records.best)) +
+    cell("📅","МАТЧЕЙ", records.matches) +
+    cell("⭐","МИЛЛИОНОВ", records.wins) +
+    cell("🎯","ДАЛЬНЯЯ ЗОНА", `${records.bestStep}<small>/15</small>`);
+  renderRail();
   $("btnResume").hidden = !Storage.get(SAVE_KEY);
 }
 const RULES_HTML = `
@@ -2046,6 +2248,7 @@ function bindUI(){
   $("btnRulesClose").onclick = ()=>{ $("ovRules").hidden = true; };
   $("btnAgain").onclick  = ()=>{ $("ovResult").hidden = true; startMatch(S ? S.pos : menuPos); };
   $("btnMenu").onclick   = ()=>{ $("ovResult").hidden = true; $("scrGame").hidden = true; $("scrMenu").hidden = false; renderMenu(); };
+  $("btnGameMenu").onclick = openGameMenu;
 
   $("tOffside").onclick = ()=>useHint("offside");
   $("tCoach").onclick   = ()=>useHint("coach");
@@ -2055,12 +2258,7 @@ function bindUI(){
   $("tAttack").onclick  = toggleAttack;
   $("tCash").onclick    = cashOut;
 
-  $("btnSound").onclick = ()=>{
-    soundOn = !soundOn;
-    $("btnSound").textContent = soundOn ? "🔊" : "🔇";
-    muteAll(!soundOn);
-    try{ Storage.set("f15_sound", soundOn?"1":"0"); }catch(e){}
-  };
+  $("btnSound").onclick = toggleSound;
   if(Storage.get("f15_sound")==="0"){ soundOn=false; $("btnSound").textContent="🔇"; }
 
   /* Клавиатура: 1–4 / A–D — ответ, Enter — подтвердить фиксацию. */

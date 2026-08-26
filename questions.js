@@ -51,7 +51,7 @@
 const CATS = {
   world:   { name:"Сборные и мундиали", short:"МУНДИАЛЬ",  icon:"🌍" },
   euro:    { name:"Еврокубки",          short:"ЕВРОКУБКИ", icon:"🏆" },
-  leagues: { name:"Европейские лиги",   short:"ЛИГИ",      icon:"🎽" },
+  leagues: { name:"Европейские лиги",   short:"ЛИГИ",      icon:"📊" },
   players: { name:"Игроки и рекорды",   short:"ИГРОКИ",    icon:"⭐" },
   rules:   { name:"Правила и судейство",short:"ПРАВИЛА",   icon:"🟨" },
   tactics: { name:"Тактика и термины",  short:"ТАКТИКА",   icon:"📐" },
@@ -64,7 +64,7 @@ const CATS = {
 const ROLES = {
   gk:  { name:"Вопросы про вратарей",       short:"ВРАТАРИ",       icon:"🧤" },
   def: { name:"Вопросы про защитников",     short:"ЗАЩИТНИКИ",     icon:"🛡" },
-  mid: { name:"Вопросы про полузащитников", short:"ПОЛУЗАЩИТНИКИ", icon:"⚙" },
+  mid: { name:"Вопросы про полузащитников", short:"ПОЛУЗАЩИТНИКИ", icon:"🎯" },
   fwd: { name:"Вопросы про нападающих",     short:"НАПАДАЮЩИЕ",    icon:"⚡" },
 };
 

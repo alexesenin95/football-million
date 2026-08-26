@@ -1334,7 +1334,7 @@ function audio(){
    Автозапуск до первого жеста браузеры блокируют — стартуем с первого касания.
    Глушение единое: кнопка звука, сворачивание, реклама (требование Яндекса).
 --------------------------------------------------------------------------- */
-let jbTracks = {}, jbCurrent = null, jbFades = {};
+let jbTracks = {}, jbCurrent = null, jbFades = {}, jbKick = null;
 const JB_VOL = { menu:.45, m1:.32, m2:.34, m3:.34 };
 function jbSrc(k){
   return k==="menu" ? ASSETS.music : k==="m1" ? ASSETS.musicMatch1 :
@@ -1347,10 +1347,17 @@ function musicInit(){
     const a = new Audio(src); a.loop = true; a.preload = "auto"; a.volume = 0;
     jbTracks[k] = a;
   });
+  /* Автозапуск звука до первого жеста блокируют сами браузеры. Пытаемся на
+     каждом сигнале, который политика считает жестом или поводом повторить:
+     любое касание/клавиша, возврат фокуса, возврат на вкладку. В iframe
+     Яндекс.Игр с правом autoplay первая же попытка проходит — музыка идёт
+     прямо с экрана загрузки. */
   const kick = ()=>{ const t = jbTracks[jbCurrent];
     if(t && soundOn && !paused && t.paused){ t.play().catch(()=>{}); } };
-  document.addEventListener("pointerdown", kick);
-  document.addEventListener("keydown", kick);
+  ["pointerdown","touchstart","keydown","click"].forEach(e=>document.addEventListener(e, kick, {capture:true}));
+  window.addEventListener("focus", kick);
+  document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) kick(); });
+  jbKick = kick;
 }
 /* Плавно ведёт громкость трека к цели; на нуле ставит на паузу. */
 function jbFade(key, target){
@@ -2638,6 +2645,7 @@ function preloadAssets(){
   });
 }
 function showSplash(){
+  if(jbKick) jbKick();
   $("scrLoad").classList.add("done");
   setTimeout(()=>{ $("scrLoad").hidden = true; }, 500);
   $("scrSplash").hidden = false;
@@ -2663,6 +2671,7 @@ async function boot(){
   ]);
   clearInterval(tipTimer);
   setLoad(1);
+  if(jbKick) jbKick();
   setTimeout(showSplash, 250);
 }
 boot();

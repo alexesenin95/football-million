@@ -817,6 +817,9 @@ const SAFE_BASE = [5,10];
 const ROLE_FLANK_EVERY = 2;
 /* Время на вопрос по сложности, секунды. */
 const TIME_BY_TIER = {1:40, 2:45, 3:55, 4:70, 5:90};
+/* Потолок премии за «Атаку» за один шаг. Без него атака на 15-м шаге удваивала весь
+   выигрыш и выводила итог далеко за миллион — а миллион в этой игре и есть вершина. */
+const ATTACK_CAP = 100000;
 /* Банк добавленного времени */
 const BANK_STEP = 15;      // сколько добавляет одно нажатие
 const BANK_PER_Q = 20;     // сколько максимум капает в банк с одного вопроса
@@ -1426,11 +1429,12 @@ function onCorrect(){
   SFX.ok();
   S.right++;
   S.streak++; S.bestStreak = Math.max(S.bestStreak, S.streak);
-  /* Бонус за «Атаку» */
+  /* Премия за «Атаку» — с потолком на шаг, чтобы поздняя атака не перевешивала лестницу. */
   if(S.attack){
-    const add = LADDER[S.step-1] * (S.pos==="fwd" ? 1.0 : .5);
+    const raw = LADDER[S.step-1] * (S.pos==="fwd" ? 1.0 : .5);
+    const add = Math.min(raw, ATTACK_CAP);
     S.bonus += add;
-    say(null, `Атака сработала! Бонус +${fmtMoney(add)} в копилку.`);
+    say(null, `Атака сработала! Премия +${fmtMoney(add)}${add < raw ? " (потолок за шаг)" : ""} в копилку.`);
   } else {
     say(S.step>=11 ? "okHi" : "ok");
   }
@@ -1634,7 +1638,8 @@ function addTime(){
 function toggleAttack(){
   if(S.attack || !(S.phase==="flank" || S.phase==="ask")) return;
   S.attack = true;
-  pushFeed("⚡", `Объявлена атака на ${fmtMoney(LADDER[S.step-1])}`, "gold");
+  pushFeed("⚡", `Объявлена атака на ${fmtMoney(LADDER[S.step-1])} — премия до `
+    + fmtMoney(Math.min(LADDER[S.step-1]*(S.pos==="fwd"?1:.5), ATTACK_CAP)), "gold");
   SFX.roar(.8,.12);
   say("attack");
   if(S.phase==="ask") $("qStep").textContent = `ШАГ ${S.step} · ${fmtMoney(LADDER[S.step-1])} · ⚡АТАКА`;
@@ -1802,8 +1807,11 @@ function finish(reason){
   S.phase = "over";
   clearMatch();
   clearInterval(lockTimer); clearInterval(penTimer);
+  /* На красной карточке остаётся гарантия и уже заработанная премия, но надбавка амплуа
+     не начисляется: это премия за доигранный матч, а не за удаление. */
   const base = reason==="red" ? safeMoney() : curMoney();
-  const total = Math.round((base + S.bonus) * P().mult);
+  const mult = reason==="red" ? 1 : P().mult;
+  const total = Math.round((base + S.bonus) * mult);
 
   records.matches++;
   if(reason==="win") records.wins++;
@@ -1822,9 +1830,11 @@ function finish(reason){
   $("resSum").textContent = fmtMoney(total);
   const detail = [];
   detail.push(`Пройдено зон: <b>${S.reached}</b> из 15.`);
-  if(S.bonus) detail.push(`Бонус за «Атаку»: <b>${fmtMoney(S.bonus)}</b>.`);
-  if(P().mult!==1) detail.push(`Надбавка амплуа: <b>×${P().mult}</b>.`);
-  if(reason==="red") detail.push(`Спасла гарантия: <b>${fmtMoney(base)}</b>.`);
+  detail.push(reason==="red" ? `Спасла гарантия: <b>${fmtMoney(base)}</b>.`
+                             : `На поле взято: <b>${fmtMoney(base)}</b>.`);
+  if(S.bonus) detail.push(`Премиальные за «Атаку»: <b>${fmtMoney(S.bonus)}</b>.`);
+  if(mult!==1) detail.push(`Надбавка амплуа: <b>×${mult}</b>.`);
+  else if(P().mult!==1) detail.push(`Надбавка амплуа <b>×${P().mult}</b> за удаление не начисляется.`);
   $("resText").innerHTML = detail.join(" ");
 
   const st = [
@@ -1941,8 +1951,11 @@ const RULES_HTML = `
 
 <h4>⚡ АТАКА</h4>
 <ul>
-<li>Объявляется до ответа: +50% стоимости шага в бонус-копилку (у нападающего +100%).</li>
+<li>Объявляется до ответа: +50% стоимости шага в копилку премиальных (у нападающего +100%),
+но не больше <b>100 000 ₽</b> за один шаг.</li>
 <li>Цена риска: ошибка в режиме атаки — <b>сразу красная</b>, без жёлтой.</li>
+<li>Заработанные премиальные остаются с вами даже при удалении. А вот надбавка амплуа
+начисляется только за доигранный матч — за удаление её не дают.</li>
 </ul>
 
 <h4>НАПРАВЛЕНИЕ АТАКИ</h4>

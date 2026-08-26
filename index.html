@@ -102,7 +102,8 @@ html.has-sky #sky::after{background:radial-gradient(80% 60% at 50% 120%,rgba(0,0
 html.has-turf .field{background:var(--img-turf) center/cover no-repeat}
 html.has-turf .field .marks{opacity:.75}
 html.has-ball #ball{background:var(--img-ball) center/contain no-repeat;
-  box-shadow:0 4px 8px rgba(0,0,0,.6)}
+  width:24px;height:24px;left:calc(50% - 12px);bottom:calc(var(--p) - 12px);
+  border-radius:0;box-shadow:none;filter:drop-shadow(0 3px 6px rgba(0,0,0,.6))}
 html.has-ball #ball::after{display:none}
 html.has-ball .penBall{background:var(--img-ball) center/contain no-repeat}
 html.has-goal .goalFrame{border:0;background:var(--img-goal) center/contain no-repeat}
@@ -684,11 +685,13 @@ html.has-host #commentary .mic{display:none}
   .zones{flex-direction:row}
   .zone{flex-direction:column;justify-content:center;gap:1px;padding:1px;font-size:9px;
     text-align:center;min-width:0;overflow:hidden}
-  .zone .n{width:auto}
+  .zone .n{width:auto;height:auto;background:none;box-shadow:none;border-radius:0}
   .zone .s{display:none}
   .zone .sh{display:block;margin:0;font-size:7px;letter-spacing:-.02em;white-space:nowrap}
   .zone .n{font-size:8px}
   #ball{width:12px;height:12px;left:calc(var(--p) - 6px)!important;bottom:calc(50% - 6px)!important}
+  html.has-ball #ball{width:17px;height:17px;left:calc(var(--p) - 8px)!important;
+    bottom:calc(50% - 8px)!important}
   /* На узком экране ответы растягиваются на всю колонку — пустых полос не остаётся. */
   .answers{grid-auto-rows:minmax(2.9em,5em);align-content:space-evenly}
   #tools{justify-content:center}
@@ -972,7 +975,7 @@ const ASSETS = {
   sky:          "assets/stadium_night.webp",          // фон: ночной стадион, горизонталь
   skyPortrait:  "assets/stadium_night_portrait.webp", // вертикальный кадр (для телефона)
   turf:         "",   // текстура газона под лестницу зон
-  ball:         "",   // мяч (используется и на поле, и на пенальти)
+  ball:         "assets/ball.webp",   // мяч: на лестнице зон и на пенальти
   goal:         "",   // ворота с сеткой для пенальти
   logo:         "",   // логотип на экране меню (заменяет текстовую надпись)
   trophy:       "",   // кубок на экране победы

@@ -1530,6 +1530,22 @@ function loadRecords(){
 }
 function saveRecords(){ try{ Storage.set(REC_KEY, JSON.stringify(records)); }catch(e){} }
 
+/* Память вопросов между матчами: id показанных, от давних к недавним.
+   Пока в ячейке есть невиданные вопросы, повторов при новой попытке не будет;
+   когда база в ячейке исчерпана, вернутся самые давние. */
+const SEEN_KEY = "f15_seen_v1", SEEN_CAP = 300;
+let seenQ = [];
+function seenLoad(){
+  try{ const v = JSON.parse(Storage.get(SEEN_KEY)||"[]"); seenQ = Array.isArray(v) ? v.filter(x=>typeof x==="string") : []; }
+  catch(e){ seenQ = []; }
+}
+function seenMark(id){
+  const i = seenQ.indexOf(id); if(i>=0) seenQ.splice(i,1);
+  seenQ.push(id);
+  if(seenQ.length > SEEN_CAP) seenQ = seenQ.slice(-SEEN_CAP);
+  try{ Storage.set(SEEN_KEY, JSON.stringify(seenQ)); }catch(e){}
+}
+
 /* ---------------------------------------------------------------------------
    5) РЕНДЕР
 --------------------------------------------------------------------------- */
@@ -1780,9 +1796,10 @@ function askQuestion(extraTime){
   const tier = QDB.tierByStep(S.step);
   const used = new Set(S.used);
   const q = S.flank.kind==="role"
-    ? QDB.pickRole(S.flank.key, tier, used)     // вопрос про игроков вашего амплуа
-    : QDB.pick(S.flank.key, tier, used);
+    ? QDB.pickRole(S.flank.key, tier, used, seenQ)     // вопрос про игроков вашего амплуа
+    : QDB.pick(S.flank.key, tier, used, seenQ);
   S.used.push(q.id);
+  seenMark(q.id);
   S.q = { id:q.id, q:q.q, fact:q.fact||"", cat:q.cat, tier:q.tier, role:q.role||null };
 
   const ci = QDB.correctIndex(q);
@@ -2704,6 +2721,7 @@ function showSplash(){
 }
 async function boot(){
   loadRecords();
+  seenLoad();
   applyAssets();
   musicInit();
   musicPlay();
@@ -2713,7 +2731,7 @@ async function boot(){
   let tip = 0;
   const tipTimer = setInterval(()=>{ $("loadTip").textContent = LOAD_TIPS[++tip % LOAD_TIPS.length]; }, 1300);
   const t0 = Date.now();
-  const sdkPromise = initSDK().then(()=>{ loadRecords(); renderMenu(); });
+  const sdkPromise = initSDK().then(()=>{ loadRecords(); seenLoad(); renderMenu(); });
   await Promise.all([
     preloadAssets(),
     Promise.race([sdkPromise, new Promise(r=>setTimeout(r, 2500))]),

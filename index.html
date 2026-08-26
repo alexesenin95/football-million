@@ -40,6 +40,9 @@
   --gold:#ffcf3d; --goldDim:#a8842a;
   --yellow:#ffd60a; --red:#ff3b30;
   --ink:#eaf2ea; --ink2:#8fa3a8; --ink3:#586a70;
+  /* Слоты под графику: пока пусто — работают CSS-заглушки, см. ASSETS в скрипте. */
+  --img-sky:none; --img-skyP:none; --img-turf:none; --img-ball:none; --img-goal:none;
+  --img-keeper:none; --img-cardY:none; --img-cardR:none; --img-host:none;
   --led:'Unbounded',system-ui,sans-serif;
   --body:'Nunito',system-ui,-apple-system,sans-serif;
   --r:14px;
@@ -77,6 +80,31 @@ button:disabled{cursor:default}
   opacity:.85;
 }
 @keyframes flicker{0%,100%{opacity:1}45%{opacity:.86}70%{opacity:.95}}
+
+/* --- Подмена заглушек настоящей графикой ---------------------------------
+   Каждое правило включается классом has-* на <html>, который ставит applyAssets().
+   Пока файла нет — ни одно правило не срабатывает, и рисует CSS. */
+html.has-sky #sky{background:var(--img-sky) center/cover no-repeat, var(--night)}
+html.has-sky #sky::before{opacity:.4}                    /* фотопрожекторы уже в кадре */
+html.has-sky #sky::after{background:radial-gradient(80% 60% at 50% 120%,rgba(0,0,0,.7),transparent 70%);
+  background-size:100% 100%}
+@media (max-aspect-ratio:1/1){
+  html.has-skyP #sky{background-image:var(--img-skyP)}    /* вертикальный кадр для телефона */
+}
+html.has-turf .field{background:var(--img-turf) center/cover no-repeat}
+html.has-turf .field .marks{opacity:.75}
+html.has-ball #ball{background:var(--img-ball) center/contain no-repeat;
+  box-shadow:0 4px 8px rgba(0,0,0,.6)}
+html.has-ball #ball::after{display:none}
+html.has-ball .penBall{background:var(--img-ball) center/contain no-repeat}
+html.has-goal .goalFrame{border:0;background:var(--img-goal) center/contain no-repeat}
+html.has-cards .bigCard.y{background:var(--img-cardY) center/contain no-repeat}
+html.has-cards .bigCard.r{background:var(--img-cardR) center/contain no-repeat}
+/* Вратарь: кадры нарисованы на общем холсте ворот, поза уже внутри кадра —
+   поэтому CSS-наклоны и прыжки отключаются, анимация становится сменой кадра. */
+html.has-keeper .keeper{inset:0;left:0;width:auto;height:auto;border-radius:0;box-shadow:none;
+  transition:none;transform:none!important;
+  background:var(--img-keeper) center bottom/contain no-repeat}
 
 #app{position:relative;z-index:1;height:100%;display:flex;flex-direction:column}
 .screen{position:absolute;inset:0;display:flex;flex-direction:column}
@@ -116,6 +144,9 @@ button:disabled{cursor:default}
 #scrMenu{align-items:center;justify-content:center;padding:2vh 3vw;gap:2vh;overflow:auto}
 #scrMenu .wrap{width:min(1000px,96vw);display:flex;flex-direction:column;align-items:center;gap:2.2vh}
 .logo{text-align:center;line-height:.95}
+#logoImg{display:none;width:100%;max-width:min(720px,92vw);height:auto}
+html.has-logo #logoImg{display:block}
+html.has-logo .logoText{display:none}
 .logo .l1{font-family:var(--led);font-weight:800;font-size:clamp(15px,2.6vw,30px);
   color:var(--ink2);letter-spacing:.22em}
 .logo .l2{font-family:var(--led);font-weight:900;font-size:clamp(34px,7.4vw,92px);
@@ -271,6 +302,8 @@ button:disabled{cursor:default}
   box-shadow:0 0 0 2px rgba(200,255,46,.3),0 14px 34px rgba(0,0,0,.5)}
 .flank .side{font-size:.68em;letter-spacing:.2em;color:var(--ink3);font-weight:800}
 .flank .ico{font-size:clamp(22px,3.4vw,42px);line-height:1}
+.flank .ico img{width:clamp(28px,4.4vw,54px);height:clamp(28px,4.4vw,54px);object-fit:contain}
+.qmeta .cat img{width:1.15em;height:1.15em;vertical-align:-.2em;margin-right:.15em}
 .flank .nm{font-family:var(--led);font-weight:800;font-size:clamp(11px,1.25vw,16px);letter-spacing:.05em}
 .flank .ds{font-size:.78em;color:var(--ink2);font-weight:700}
 .flank .cnt{font-size:.7em;color:var(--ink3);font-weight:800;letter-spacing:.08em}
@@ -350,6 +383,8 @@ button:disabled{cursor:default}
   border:1px solid var(--edge2);transition:border-color .15s,transform .1s,opacity .2s;
 }
 .tool .tn{font-family:var(--led);font-weight:800;font-size:.76em;letter-spacing:.04em;white-space:nowrap}
+.tool .ti{font-style:normal}
+.tool .ti img{width:1.3em;height:1.3em;vertical-align:-.25em}
 .tool .td{font-size:.66em;color:var(--ink3);font-weight:800;letter-spacing:.06em;white-space:nowrap}
 .tool:hover:not(:disabled){border-color:var(--lime);transform:translateY(-2px)}
 .tool:disabled{opacity:.3}
@@ -381,6 +416,12 @@ button:disabled{cursor:default}
 #commentary .say{color:var(--ink);opacity:0;animation:sayIn .35s forwards}
 @keyframes sayIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 #commentary .mic{flex:none;opacity:.6}
+/* Портрет комментатора — появляется, только если положили картинки. */
+#commentary .host{display:none;flex:none;width:2.5em;height:2.5em;border-radius:50%;
+  border:1px solid var(--edge2);background:var(--img-host) center/cover no-repeat;
+  box-shadow:0 0 14px rgba(200,255,46,.15)}
+html.has-host #commentary .host{display:block}
+html.has-host #commentary .mic{display:none}
 
 /* ===========================================================================
    ОВЕРЛЕИ
@@ -450,6 +491,7 @@ button:disabled{cursor:default}
   margin-top:.5em;min-height:1.4em}
 
 /* --- РЕЗУЛЬТАТ --- */
+#resArt{display:block;margin:0 auto .4em;width:clamp(90px,16vw,150px);height:auto}
 .sum{font-family:var(--led);font-weight:900;font-size:clamp(30px,6.6vw,72px);text-align:center;
   background:linear-gradient(180deg,#fff6d0,var(--gold) 55%,#a06f00);
   -webkit-background-clip:text;background-clip:text;color:transparent;
@@ -532,9 +574,12 @@ button:disabled{cursor:default}
 <section id="scrMenu" class="screen">
   <div class="wrap">
     <div class="logo">
-      <div class="l1">КВИЗ-МАТЧ</div>
-      <div class="l2">15 ШАГОВ К МИЛЛИОНУ</div>
-      <div class="l3">Ф<b>У</b>ТБОЛ</div>
+      <img id="logoImg" alt="15 шагов к миллиону: Футбол">
+      <div class="logoText">
+        <div class="l1">КВИЗ-МАТЧ</div>
+        <div class="l2">15 ШАГОВ К МИЛЛИОНУ</div>
+        <div class="l3">Ф<b>У</b>ТБОЛ</div>
+      </div>
     </div>
 
     <div class="hint" style="text-align:center;max-width:44em">
@@ -611,21 +656,22 @@ button:disabled{cursor:default}
 
       <!-- инструменты -->
       <div id="tools">
-        <button class="tool" id="tOffside"><span class="tn">⚑ ОФСАЙД</span><span class="td">50:50</span></button>
-        <button class="tool" id="tCoach"><span class="tn">🧥 ТРЕНЕР</span><span class="td">СОВЕТ</span></button>
-        <button class="tool" id="tStands"><span class="tn">📣 ТРИБУНЫ</span><span class="td">ОПРОС</span></button>
+        <button class="tool" id="tOffside"><span class="tn"><i class="ti">⚑</i> ОФСАЙД</span><span class="td">50:50</span></button>
+        <button class="tool" id="tCoach"><span class="tn"><i class="ti">🧥</i> ТРЕНЕР</span><span class="td">СОВЕТ</span></button>
+        <button class="tool" id="tStands"><span class="tn"><i class="ti">📣</i> ТРИБУНЫ</span><span class="td">ОПРОС</span></button>
         <div class="subsBox" id="subsBox"><span class="k">ЗАМЕНЫ</span><span class="v" id="subsLeft">3</span></div>
-        <button class="tool var" id="tVar"><span class="tn">📺 VAR</span><span class="td" id="varLeft">1</span></button>
+        <button class="tool var" id="tVar"><span class="tn"><i class="ti">📺</i> VAR</span><span class="td" id="varLeft">1</span></button>
         <span class="spacer"></span>
-        <button class="tool" id="tTime"><span class="tn">⏱ +15″</span><span class="td" id="bankLbl">0″</span></button>
-        <button class="tool atk" id="tAttack"><span class="tn">⚡ АТАКА</span><span class="td">+50% РИСК</span></button>
-        <button class="tool cash" id="tCash"><span class="tn">🅿 УДЕРЖАНИЕ</span><span class="td">ЗАБРАТЬ</span></button>
+        <button class="tool" id="tTime"><span class="tn"><i class="ti">⏱</i> +15″</span><span class="td" id="bankLbl">0″</span></button>
+        <button class="tool atk" id="tAttack"><span class="tn"><i class="ti">⚡</i> АТАКА</span><span class="td">+50% РИСК</span></button>
+        <button class="tool cash" id="tCash"><span class="tn"><i class="ti">🅿</i> УДЕРЖАНИЕ</span><span class="td">ЗАБРАТЬ</span></button>
       </div>
     </main>
   </div>
 
   <footer id="commentary">
     <span class="mic">🎙</span>
+    <span class="host" id="cHost"></span>
     <span class="min" id="cMin">0′</span>
     <span class="say" id="cSay">Стадион готов. Свисток!</span>
   </footer>
@@ -668,6 +714,7 @@ button:disabled{cursor:default}
 <div class="ov" id="ovResult" hidden>
   <div class="ovCard">
     <div class="ovTtl" id="resTtl">ИТОГ МАТЧА</div>
+    <img id="resArt" alt="" hidden>
     <div class="sum" id="resSum">0 ₽</div>
     <div class="ovText" id="resText"></div>
     <div class="stats" id="resStats"></div>
@@ -715,6 +762,37 @@ button:disabled{cursor:default}
    1) КОНСТАНТЫ
 --------------------------------------------------------------------------- */
 const VERSION = "1.0.0";
+
+/* ---------------------------------------------------------------------------
+   ГРАФИКА: слоты под картинки. Пустая строка = работает CSS/эмодзи-заглушка.
+   Чтобы подключить файл — положить его в assets/ и вписать путь сюда.
+   Требования к каждому файлу (размер, формат, что должно быть в кадре)
+   расписаны в ASSETS.md рядом с этим файлом.
+--------------------------------------------------------------------------- */
+const ASSETS = {
+  sky:          "",   // фон: ночной стадион, горизонтальный кадр
+  skyPortrait:  "",   // тот же фон вертикальным кадром (для телефона)
+  turf:         "",   // текстура газона под лестницу зон
+  ball:         "",   // мяч (используется и на поле, и на пенальти)
+  goal:         "",   // ворота с сеткой для пенальти
+  logo:         "",   // логотип на экране меню (заменяет текстовую надпись)
+  trophy:       "",   // кубок на экране победы
+  // Вратарь: шесть кадров на ОДНОМ холсте размера ворот, поза уже внутри кадра.
+  keeper: { idle:"", leanL:"", leanR:"", diveL:"", diveR:"", diveC:"" },
+  // Карточки для полноэкранной вспышки.
+  card:   { y:"", r:"" },
+  // Иконки категорий = флангов атаки. Ключи совпадают с CATS в questions.js.
+  cat:    { world:"", clubs:"", players:"", rules:"", tactics:"", russia:"" },
+  // Иконки панели инструментов.
+  tool:   { offside:"", coach:"", stands:"", var:"", time:"", attack:"", cash:"" },
+  // Комментатор: портрет в строке трансляции, пять состояний.
+  host:   { idle:"", ok:"", bad:"", card:"", win:"" },
+};
+/* Эмоция комментатора по событию — какой портрет показать на какую реплику. */
+const HOST_EMO = {
+  ok:"ok", okHi:"ok", streak:"ok", save:"ok", win:"win", penGoal:"win",
+  bad:"bad", timeout:"bad", penMiss:"bad", yellow:"card", red:"card",
+};
 const SAVE_KEY = "f15_save_v1";
 const REC_KEY  = "f15_rec_v1";
 
@@ -996,7 +1074,45 @@ function saveRecords(){ try{ Storage.set(REC_KEY, JSON.stringify(records)); }cat
 /* ---------------------------------------------------------------------------
    5) РЕНДЕР
 --------------------------------------------------------------------------- */
+/* Включает те правила CSS, для которых реально положили файлы. */
+function applyAssets(){
+  const R = document.documentElement;
+  const set = (name,url)=>{ if(url) R.style.setProperty(name, `url("${url}")`); };
+  const on  = (cls,cond)=>R.classList.toggle(cls, !!cond);
+  set("--img-sky",  ASSETS.sky);                          on("has-sky",  ASSETS.sky);
+  set("--img-skyP", ASSETS.skyPortrait);                   on("has-skyP", ASSETS.skyPortrait);
+  set("--img-turf", ASSETS.turf);                          on("has-turf", ASSETS.turf);
+  set("--img-ball", ASSETS.ball);                           on("has-ball", ASSETS.ball);
+  set("--img-goal", ASSETS.goal);                           on("has-goal", ASSETS.goal);
+  set("--img-cardY", ASSETS.card.y); set("--img-cardR", ASSETS.card.r);
+  on("has-cards", ASSETS.card.y && ASSETS.card.r);
+  on("has-keeper", ASSETS.keeper.idle);
+  on("has-host",   ASSETS.host.idle);
+  on("has-logo",   ASSETS.logo);
+  if(ASSETS.logo) $("logoImg").src = ASSETS.logo;
+  Object.entries({ tOffside:"offside", tCoach:"coach", tStands:"stands", tVar:"var",
+                   tTime:"time", tAttack:"attack", tCash:"cash" }).forEach(([id,key])=>{
+    const url = ASSETS.tool[key], slot = $(id) && $(id).querySelector(".ti");
+    if(url && slot) slot.innerHTML = `<img src="${url}" alt="">`;
+  });
+  setKeeperArt("idle");
+  setHost("idle");
+}
+/* Иконка: картинка, если положили, иначе эмодзи-заглушка. */
+function icon(url, fallback){ return url ? `<img src="${url}" alt="">` : fallback; }
+function setKeeperArt(pose){
+  if(!ASSETS.keeper.idle) return;
+  document.documentElement.style.setProperty("--img-keeper",
+    `url("${ASSETS.keeper[pose] || ASSETS.keeper.idle}")`);
+}
+function setHost(emo){
+  if(!ASSETS.host.idle) return;
+  document.documentElement.style.setProperty("--img-host",
+    `url("${ASSETS.host[emo] || ASSETS.host.idle}")`);
+}
+
 function say(key, text){
+  if(key && HOST_EMO[key]) setHost(HOST_EMO[key]);
   $("cMin").textContent = matchMinute();
   const el = $("cSay");
   el.textContent = text || pickSay(key);
@@ -1133,7 +1249,7 @@ function offerFlanks(){
     const b = document.createElement("button");
     b.className = "flank";
     b.innerHTML = `<span class="side">${SIDES[i]}</span>
-      <span class="ico">${c.icon}</span>
+      <span class="ico">${icon(ASSETS.cat[cat], c.icon)}</span>
       <span class="nm">${c.short}</span>
       <span class="ds">${c.name}</span>
       ${i===S.freeFlank ? '<span class="cnt" style="color:var(--lime)">СВОБОДНАЯ ЗОНА · +15″</span>' : '<span class="cnt">ЗАЩИТА ГОТОВА</span>'}`;
@@ -1173,7 +1289,7 @@ function askQuestion(extraTime){
 
   $("flanks").hidden = true; $("qbox").hidden = false;
   const c = QDB.cats[q.cat];
-  $("qCat").textContent = `${c.icon} ${c.short}`;
+  $("qCat").innerHTML = `${icon(ASSETS.cat[q.cat], c.icon)} ${c.short}`;
   $("qStep").textContent = `ШАГ ${S.step} · ${fmtMoney(LADDER[S.step-1])}${S.attack?" · ⚡АТАКА":""}`;
   $("qDots").textContent = "●".repeat(q.tier) + "○".repeat(5-q.tier);
   $("qText").textContent = q.q;
@@ -1558,10 +1674,12 @@ function openPenalty(){
   SFX.whistle();
 
   /* Вратарь начинает клониться через полсекунды. */
+  setKeeperArt("idle");
   setTimeout(()=>{
     if(penDone) return;
     const cls = penLean===0 ? "lean-l" : penLean===2 ? "lean-r" : "";   // в центре вратарь стоит ровно
     if(cls) k.classList.add(cls);
+    setKeeperArt(penLean===0 ? "leanL" : penLean===2 ? "leanR" : "idle");
   }, 500);
 
   let left = 5.0;
@@ -1600,6 +1718,7 @@ function shoot(sector, auto){
   ball.style.transform = `translate(${dx}px, ${dy}px) scale(.75)`;
   const k = $("keeper");
   k.className = "keeper " + (penKeeperCol===0?"dive-l":penKeeperCol===2?"dive-r":"dive-c");
+  setKeeperArt(penKeeperCol===0 ? "diveL" : penKeeperCol===2 ? "diveR" : "diveC");
 
   setTimeout(()=>{
     if(post){
@@ -1659,6 +1778,9 @@ function finish(reason){
   ttl.className = "ovTtl " + (reason==="win"?"gold":reason==="red"?"red":"lime");
   ttl.textContent = reason==="win" ? "ГОЛ! МИЛЛИОН ВЗЯТ" :
                     reason==="red" ? "УДАЛЕНИЕ · МАТЧ ОКОНЧЕН" : "ИГРА НА УДЕРЖАНИЕ";
+  const art = $("resArt");
+  if(reason==="win" && ASSETS.trophy){ art.src = ASSETS.trophy; art.hidden = false; }
+  else art.hidden = true;
   $("resSum").textContent = fmtMoney(total);
   const detail = [];
   detail.push(`Пройдено зон: <b>${S.reached}</b> из 15.`);
@@ -1846,6 +1968,7 @@ function bindUI(){
 
 async function boot(){
   loadRecords();
+  applyAssets();
   bindUI();
   renderMenu();
   requestAnimationFrame(tickLoop);

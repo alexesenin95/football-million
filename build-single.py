@@ -59,7 +59,11 @@ def build(bare=False):
             raise SystemExit("после снятия обвязки <title> должен быть первой строкой")
 
     # Ничего внешнего остаться не должно — иначе одиночный файл не самодостаточен.
-    external = [u for u in re.findall(r'(?:src|href)="([^"]+)"', src) if not u.startswith("data:")]
+    # Подстановки вида src="${url}" — это шаблонные строки JS, а не ссылки на файлы.
+    external = [
+        u for u in re.findall(r'(?:src|href)="([^"]+)"', src)
+        if not u.startswith("data:") and "${" not in u
+    ]
     if external:
         raise SystemExit("остались внешние ссылки: %s" % ", ".join(external))
     return src

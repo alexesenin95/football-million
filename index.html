@@ -461,7 +461,7 @@ html.has-logo .logoText{display:none}
   grid-auto-rows:minmax(3.2em,5.6em);gap:clamp(6px,1vw,12px);min-height:0}
 .ans{
   --c:12px;display:flex;align-items:center;gap:.7em;padding:.6em .9em;text-align:left;
-  transition:transform .1s,filter .2s,opacity .2s;
+  position:relative;transition:transform .1s,filter .2s,opacity .2s;
 }
 .ans .ltr{
   flex:none;width:2.1em;height:2.1em;display:grid;place-items:center;border-radius:50%;
@@ -1553,7 +1553,7 @@ function askQuestion(extraTime){
   const box = $("answers"); box.innerHTML = "";
   S.opts.forEach((txt,i)=>{
     const b = document.createElement("button");
-    b.className = "ans"; b.dataset.i = i;
+    b.className = "ans cut"; b.dataset.i = i;
     b.innerHTML = `<span class="ltr">${"ABCD"[i]}</span><span class="txt">${txt}</span>
                    <span class="pct"></span><span class="bar"></span>`;
     b.onclick = ()=>onPick(i);

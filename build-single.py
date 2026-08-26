@@ -49,7 +49,8 @@ def build(bare=False):
     # Подключённая графика из ASSETS (пути вида "assets/...") -> data:URI.
     # В репозитории игра ссылается на файлы, но одиночный файл должен нести их в себе.
     MIME = {".webp": "image/webp", ".png": "image/png", ".jpg": "image/jpeg",
-            ".jpeg": "image/jpeg", ".svg": "image/svg+xml", ".gif": "image/gif"}
+            ".jpeg": "image/jpeg", ".svg": "image/svg+xml", ".gif": "image/gif",
+            ".mp3": "audio/mpeg", ".ogg": "audio/ogg"}
     def inline_asset(m):
         rel = m.group(1)
         path = os.path.join(HERE, rel)

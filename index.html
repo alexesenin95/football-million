@@ -360,6 +360,8 @@ html.has-logo .logoText{display:none}
   background:linear-gradient(180deg,rgba(28,44,68,.9),rgba(8,15,26,.95));
   border:1px solid var(--edgeGold);transition:filter .12s,transform .12s}
 .bRound:hover{filter:brightness(1.3);transform:scale(1.06)}
+#btnSoundMenu{position:absolute;top:14px;right:14px;z-index:5;
+  width:clamp(34px,3vw,42px);height:clamp(34px,3vw,42px)}
 #cards{display:flex;gap:4px}
 .card2{width:12px;height:17px;border-radius:2px;background:#1b2736;border:1px solid rgba(255,255,255,.14)}
 .card2.y{background:var(--yellow);box-shadow:0 0 12px rgba(255,214,10,.6)}
@@ -872,6 +874,7 @@ html.has-host #commentary .mic{display:none}
 
 <!-- ======================= ЭКРАН: МЕНЮ ======================= -->
 <section id="scrMenu" class="screen" hidden>
+  <button id="btnSoundMenu" class="bRound" title="Звук">🔊</button>
   <div class="wrap">
     <div class="logo">
       <img id="logoImg" alt="15 шагов к миллиону: Футбол">
@@ -1097,6 +1100,7 @@ const ASSETS = {
   skyPortrait:  "assets/stadium_night_portrait.webp", // вертикальный кадр (для телефона)
   loading:      "",   // свой фон экрана загрузки (пока пусто — виден общий стадион)
   splash:       "",   // свой фон стартового экрана
+  music:        "assets/music_menu.mp3",   // музыка загрузки, заставки и меню
   turf:         "",   // текстура газона под лестницу зон
   ball:         "assets/ball.webp",   // мяч: на лестнице зон и на пенальти
   goal:         "",   // ворота с сеткой для пенальти
@@ -1320,7 +1324,45 @@ function audio(){
   if(actx && actx.state==="suspended") actx.resume().catch(()=>{});
   return actx;
 }
-function muteAll(on){ try{ if(actx){ on ? actx.suspend() : (soundOn && actx.resume().catch(()=>{})); } }catch(e){} }
+/* ---------------------------------------------------------------------------
+   МУЗЫКА МЕНЮ. Играет на экранах загрузки, заставки и меню; в матче молчит.
+   Автозапуск до первого жеста браузеры блокируют — тогда стартуем на первом
+   касании (стартовый экран и так требует тап). Глушится вместе со всем звуком
+   (кнопка 🔊, сворачивание, реклама — требование Яндекса).
+--------------------------------------------------------------------------- */
+let music = null, musicWanted = false, musicFade = null;
+function musicInit(){
+  if(music || !ASSETS.music) return;
+  music = new Audio(ASSETS.music);
+  music.loop = true; music.volume = .45; music.preload = "auto";
+  const kick = ()=>{ if(musicWanted && soundOn && !paused && music.paused) music.play().catch(()=>{}); };
+  document.addEventListener("pointerdown", kick);
+  document.addEventListener("keydown", kick);
+}
+function musicPlay(){
+  musicWanted = true;
+  if(!music || !soundOn || paused) return;
+  clearInterval(musicFade); music.volume = .45;
+  music.play().catch(()=>{});                       // заблокировано — стартуем с первого жеста
+}
+function musicStop(){
+  musicWanted = false;
+  if(!music || music.paused) return;
+  clearInterval(musicFade);                          // плавное затухание за ~0.8 с
+  musicFade = setInterval(()=>{
+    music.volume = Math.max(0, music.volume - .05);
+    if(music.volume <= 0){ clearInterval(musicFade); music.pause(); music.volume = .45; }
+  }, 80);
+}
+function musicSync(){                                /* пауза/возврат без смены желания играть */
+  if(!music) return;
+  if(!soundOn || paused){ if(!music.paused) music.pause(); }
+  else if(musicWanted && music.paused){ music.play().catch(()=>{}); }
+}
+function muteAll(on){
+  try{ if(actx){ on ? actx.suspend() : (soundOn && actx.resume().catch(()=>{})); } }catch(e){}
+  musicSync();
+}
 function tone(freq, dur, type="sine", vol=.16, slideTo){
   if(!soundOn) return; const a=audio(); if(!a) return;
   const o=a.createOscillator(), g=a.createGain();
@@ -1555,6 +1597,7 @@ function renderAll(kick){ renderBoard(); renderZones(kick); renderTools(); rende
    6) ХОД МАТЧА
 --------------------------------------------------------------------------- */
 function startMatch(posKey){
+  musicStop();
   S = newMatch(posKey);
   buildZones();
   $("scrMenu").hidden = true; $("scrGame").hidden = false;
@@ -1568,6 +1611,7 @@ function startMatch(posKey){
 function resumeMatch(raw){
   try{ S = JSON.parse(raw); }catch(e){ return false; }
   if(!S || S.v!==VERSION || S.phase==="over") return false;
+  musicStop();
   buildZones();
   $("scrMenu").hidden = true; $("scrGame").hidden = false;
   renderAll();
@@ -2367,11 +2411,14 @@ function openGameMenu(){
 function toggleSound(){
   soundOn = !soundOn;
   $("btnSound").textContent = soundOn ? "🔊" : "🔇";
+  $("btnSoundMenu").textContent = soundOn ? "🔊" : "🔇";
   muteAll(!soundOn);
+  musicSync();
   try{ Storage.set("f15_sound", soundOn?"1":"0"); }catch(e){}
 }
 function toMenu(){
   saveMatch();
+  musicPlay();
   $("ovResult").hidden = true; $("scrGame").hidden = true;
   $("scrSplash").hidden = true; $("scrMenu").hidden = false;
   renderMenu();
@@ -2479,7 +2526,8 @@ function bindUI(){
   $("btnRules").onclick  = ()=>{ SFX.click(); $("rulesBody").innerHTML = RULES_HTML; $("ovRules").hidden = false; };
   $("btnRulesClose").onclick = ()=>{ $("ovRules").hidden = true; };
   $("btnAgain").onclick  = ()=>{ $("ovResult").hidden = true; startMatch(S ? S.pos : menuPos); };
-  $("btnMenu").onclick   = ()=>{ $("ovResult").hidden = true; $("scrGame").hidden = true; $("scrMenu").hidden = false; renderMenu(); };
+  $("btnMenu").onclick   = ()=>{ $("ovResult").hidden = true; $("scrGame").hidden = true;
+    $("scrMenu").hidden = false; musicPlay(); renderMenu(); };
   $("btnGameMenu").onclick = openGameMenu;
   $("tutNext").onclick = tutNext;
   $("tutSkip").onclick = ()=>{ SFX.click(); tutClose(true); };
@@ -2499,7 +2547,9 @@ function bindUI(){
   $("tCash").onclick    = cashOut;
 
   $("btnSound").onclick = toggleSound;
-  if(Storage.get("f15_sound")==="0"){ soundOn=false; $("btnSound").textContent="🔇"; }
+  $("btnSoundMenu").onclick = toggleSound;
+  if(Storage.get("f15_sound")==="0"){ soundOn=false;
+    $("btnSound").textContent="🔇"; $("btnSoundMenu").textContent="🔇"; }
 
   /* Клавиатура: 1–4 / A–D — ответ, Enter — подтвердить фиксацию. */
   document.addEventListener("keydown", e=>{
@@ -2563,6 +2613,8 @@ function showSplash(){
 async function boot(){
   loadRecords();
   applyAssets();
+  musicInit();
+  musicPlay();
   bindUI();
   renderMenu();
   requestAnimationFrame(tickLoop);

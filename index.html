@@ -109,11 +109,14 @@ html.has-ball .penBall{background:var(--img-ball) center/contain no-repeat}
 html.has-goal .goalFrame{border:0;background:var(--img-goal) center/contain no-repeat}
 html.has-cards .bigCard.y{background:var(--img-cardY) center/contain no-repeat}
 html.has-cards .bigCard.r{background:var(--img-cardR) center/contain no-repeat}
-/* Вратарь: кадры нарисованы на общем холсте ворот, поза уже внутри кадра —
-   поэтому CSS-наклоны и прыжки отключаются, анимация становится сменой кадра. */
+/* Вратарь: кадры — цельные сцены «ворота + вратарь» на общем холсте, поза уже
+   внутри кадра. CSS-створ, сетка и трансформации отключаются, анимация — смена кадра. */
 html.has-keeper .keeper{inset:0;left:0;width:auto;height:auto;border-radius:0;box-shadow:none;
   transition:none;transform:none!important;
   background:var(--img-keeper) center bottom/contain no-repeat}
+html.has-keeper .goalFrame{border:0;background:none;box-shadow:none}
+html.has-keeper .sector{border-color:rgba(200,255,46,.14);background:rgba(200,255,46,.03)}
+html.has-keeper .sector:hover:not(:disabled){background:rgba(200,255,46,.2);border-color:var(--lime)}
 
 #app{position:relative;z-index:1;height:100%;display:flex;flex-direction:column}
 .screen{position:absolute;inset:0;display:flex;flex-direction:column}
@@ -980,8 +983,11 @@ const ASSETS = {
   goal:         "",   // ворота с сеткой для пенальти
   logo:         "",   // логотип на экране меню (заменяет текстовую надпись)
   trophy:       "",   // кубок на экране победы
-  // Вратарь: шесть кадров на ОДНОМ холсте размера ворот, поза уже внутри кадра.
-  keeper: { idle:"", leanL:"", leanR:"", diveL:"", diveR:"", diveC:"" },
+  // Вратарь: цельные кадры «ворота + вратарь» на общем холсте 2.2:1.
+  // diveC пуст — при прыжке в центр остаётся кадр стойки (код сам подставляет idle).
+  keeper: { idle:"assets/keeper_idle.webp", leanL:"assets/keeper_lean_l.webp",
+            leanR:"assets/keeper_lean_r.webp", diveL:"assets/keeper_dive_l.webp",
+            diveR:"assets/keeper_dive_r.webp", diveC:"" },
   // Карточки для полноэкранной вспышки.
   card:   { y:"", r:"" },
   // Иконки категорий = флангов атаки. Ключи совпадают с CATS в questions.js.

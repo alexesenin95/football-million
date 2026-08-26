@@ -26,6 +26,7 @@ football/
   build-single.py   сборка в один самодостаточный HTML
   DESIGN.md         дизайн-документ: механика, экономика, визуальный язык
   ASSETS.md         бриф на графику: что нарисовать, какого размера, куда встанет
+  PROMPTS.md        готовые промпты для генератора изображений под каждый слот
   README.md         этот файл
   assets/fonts/     Unbounded (табло) и Nunito (текст), подмножества cyrillic + latin
 ```
@@ -72,8 +73,9 @@ const ASSETS = { sky: "assets/stadium_night.webp", ... };
 ```
 
 `applyAssets()` при старте включит нужные правила стиля сам. Какие файлы имеет смысл нарисовать,
-каких размеров и что должно быть в кадре — в [ASSETS.md](ASSETS.md). Проверить, что слот
-подхватился: `document.documentElement.className` в консоли покажет список `has-*`.
+каких размеров и что должно быть в кадре — в [ASSETS.md](ASSETS.md), готовые промпты для
+генератора — в [PROMPTS.md](PROMPTS.md). Проверить, что слот подхватился:
+`document.documentElement.className` в консоли покажет список `has-*`.
 
 ## Что настраивать
 

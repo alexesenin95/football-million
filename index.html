@@ -175,6 +175,15 @@ html.has-logo .logoText{display:none}
 .pos .ttl{font-family:var(--led);font-weight:800;font-size:.92em;margin:.35em 0 .2em;letter-spacing:.04em}
 .pos .perk{font-size:.82em;color:var(--ink2);font-weight:700;line-height:1.35}
 .pos .cost{font-size:.76em;color:var(--red);font-weight:800;margin-top:.35em}
+/* Фигура игрока на карточке амплуа: подставляется из ASSETS.pos, без неё карточка
+   выглядит как раньше. Текст ужимается, чтобы не заезжать под фигуру. */
+.pos .posArt{position:absolute;right:-8%;bottom:0;height:110%;width:auto;
+  object-fit:contain;object-position:bottom right;pointer-events:none;opacity:.92;
+  filter:drop-shadow(0 8px 18px rgba(0,0,0,.55));transition:opacity .12s,transform .12s}
+.pos.art .num,.pos.art .ttl,.pos.art .perk,.pos.art .cost{position:relative;z-index:1;max-width:66%}
+.pos.art .ttl{font-size:.86em}      /* «НАПАДАЮЩИЙ» — самое длинное слово, должно влезать */
+.pos.art:hover .posArt,.pos.on .posArt{opacity:1;transform:scale(1.04)}
+.pos.art::after{opacity:.06}
 .menuRow{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;align-items:center}
 .recBar{display:flex;gap:18px;flex-wrap:wrap;justify-content:center;font-size:.88em;color:var(--ink2)}
 .recBar b{color:var(--gold);font-family:var(--led)}
@@ -798,6 +807,8 @@ const ASSETS = {
   tool:   { offside:"", coach:"", stands:"", var:"", time:"", attack:"", cash:"" },
   // Комментатор: портрет в строке трансляции, пять состояний.
   host:   { idle:"", ok:"", bad:"", card:"", win:"" },
+  // Фигуры игроков на карточках выбора амплуа в меню. Ключи совпадают с POSITIONS.
+  pos:    { gk:"", def:"", mid:"", fwd:"" },
 };
 /* Эмоция комментатора по событию — какой портрет показать на какую реплику. */
 const HOST_EMO = {
@@ -1896,8 +1907,10 @@ function renderMenu(){
   POS_ORDER.forEach(k=>{
     const p = POSITIONS[k];
     const b = document.createElement("button");
-    b.className = "pos" + (k===menuPos ? " on" : "");
-    b.innerHTML = `<div class="num">${p.num}</div>
+    const art = ASSETS.pos[k];
+    b.className = "pos" + (k===menuPos ? " on" : "") + (art ? " art" : "");
+    b.innerHTML = (art ? `<img class="posArt" src="${art}" alt="">` : "") +
+      `<div class="num">${p.num}</div>
       <div class="ttl">${p.name}</div>
       <div class="perk">${p.perk}</div>
       ${p.cost ? `<div class="cost">${p.cost}</div>` : ""}`;
